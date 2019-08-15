@@ -130,7 +130,7 @@ bool mems_send_command(mems_info *info, uint8_t cmd)
 /**
  * Sends an initialization/startup sequence to the ECU. Required to enable further communication.
  */
-bool mems_init_link(mems_info* info, uint8_t* d0_response_buffer)
+bool mems_init_link(mems_info *info, uint8_t *d0_response_buffer)
 {
   uint8_t command_a = 0xCA;
   uint8_t command_b = 0x75;
@@ -204,49 +204,49 @@ void mems_unlock(mems_info* info)
 /**
  * Sends a command to read a frame of data from the ECU, and returns the raw frame.
  */
-bool mems_read_raw(mems_info* info, mems_data_frame_80* frame80, mems_data_frame_7d* frame7d)
+bool mems_read_raw(mems_info *info, mems_data_frame_80 *frame80, mems_data_frame_7d *frame7d)
 {
-    bool status = false;
+  bool status = false;
 
-    if (mems_lock(info))
+  if (mems_lock(info))
+  {
+    if (mems_send_command(info, MEMS_ReqData80))
     {
-      if (mems_send_command(info, MEMS_ReqData80))
+      if (mems_read_serial(info, (uint8_t *)(frame80), sizeof(mems_data_frame_80)) == sizeof(mems_data_frame_80))
       {
-        if (mems_read_serial(info, (uint8_t*)(frame80), sizeof(mems_data_frame_80)) == sizeof(mems_data_frame_80))
+        status = true;
+      }
+      else
+      {
+        dprintf_err("mems_read_raw(): failed to read data frame in response to cmd 0x80\n");
+      }
+    }
+    else
+    {
+      dprintf_err("mems_read_raw(): failed to send read command 0x80\n");
+    }
+
+    if (status)
+    {
+      if (mems_send_command(info, MEMS_ReqData7D))
+      {
+        if (mems_read_serial(info, (uint8_t*)(frame7d), sizeof(mems_data_frame_7d)) != sizeof(mems_data_frame_7d))
         {
-          status = true;
-        }
-        else
-        {
-          dprintf_err("mems_read_raw(): failed to read data frame in response to cmd 0x80\n");
+          dprintf_err("mems_read_raw(): failed to read data frame in response to cmd 0x7D\n");
+          status = false;
         }
       }
       else
       {
-        dprintf_err("mems_read_raw(): failed to send read command 0x80\n");
+        dprintf_err("mems_read_raw(): failed to send read command 0x7D\n");
+        status = false;
       }
-
-      if (status)
-      {
-        if (mems_send_command(info, MEMS_ReqData7D))
-        {
-          if (!mems_read_serial(info, (uint8_t*)(frame7d), sizeof(mems_data_frame_7d)) == sizeof(mems_data_frame_7d))
-          {
-            dprintf_err("mems_read_raw(): failed to read data frame in response to cmd 0x7D\n");
-            status = false;
-          }
-        }
-        else
-        {
-          dprintf_err("mems_read_raw(): failed to send read command 0x7D\n");
-          status = false;
-        }
-      }
-
-      mems_unlock(info);
     }
 
-    return status;
+    mems_unlock(info);
+  }
+
+  return status;
 }
 
 /**
@@ -254,50 +254,97 @@ bool mems_read_raw(mems_info* info, mems_data_frame_80* frame80, mems_data_frame
  */
 bool mems_read(mems_info* info, mems_data* data)
 {
-  bool success = false;
-  mems_data_frame_80 dframe80;
-  mems_data_frame_7d dframe7d;
+    bool success = false;
+    static mems_data_frame_80 dframe80;
+    static mems_data_frame_7d dframe7d;
 
-  if (mems_read_raw(info, &dframe80, &dframe7d))
-  {
-    memset(data, 0, sizeof(mems_data));
+    if (mems_read_raw(info, &dframe80, &dframe7d)) {
+        memset(data, 0, sizeof(mems_data));
 
-    data->engine_rpm           = ((uint16_t)dframe80.engine_rpm_hi << 8) | dframe80.engine_rpm_lo;
-    data->coolant_temp_c       = dframe80.coolant_temp;
-    data->ambient_temp_c       = dframe80.ambient_temp;
-    data->intake_air_temp_c    = dframe80.intake_air_temp;
-    data->fuel_temp_c          = dframe80.fuel_temp;
-    data->map_kpa              = dframe80.map_kpa;
-    data->battery_voltage      = dframe80.battery_voltage / 10.0;
-    data->throttle_pot_voltage = dframe80.throttle_pot * 0.02;
-    data->idle_switch          = (dframe80.idle_switch == 0) ? 0 : 1;
-    data->park_neutral_switch  = (dframe80.park_neutral_switch == 0) ? 0 : 1;
-    data->fault_codes          = 0;
-    data->iac_position         = dframe80.iac_position;
-    data->coil_time            = (((uint16_t)dframe80.coil_time_hi << 8) | dframe80.coil_time_lo) * 0.002;
-    data->idle_error           = ((uint16_t)dframe80.idle_error_hi << 8) | dframe80.idle_error_lo;
-    data->ignition_advance     = (dframe80.ignition_advance * 0.5) - 24.0;
-    data->lambda_voltage_mv    = dframe7d.lambda_voltage * 5;
-    data->fuel_trim            = dframe7d.fuel_trim;
-    data->closed_loop          = dframe7d.closed_loop;
-    data->idle_base_pos        = dframe7d.idle_base_pos;
+        // dataframe 0x80
+        data->engine_rpm = ((uint16_t)dframe80.engine_rpm_hi << 8) | dframe80.engine_rpm_lo;
+        data->coolant_temp_c = dframe80.coolant_temp - 55;
+        data->ambient_temp_c = dframe80.ambient_temp- 55;
+        data->intake_air_temp_c = dframe80.intake_air_temp - 55;
+        data->fuel_temp_c = dframe80.fuel_temp - 55;
+        data->map_kpa = dframe80.map_kpa;
+        data->battery_voltage = dframe80.battery_voltage / 10.0;
+        data->throttle_pot_voltage = dframe80.throttle_pot * 0.02;
+        data->idle_switch = (dframe80.idle_switch == 0) ? 0 : 1;
+        data->uk1 = dframe80.uk1;
+        data->park_neutral_switch = (dframe80.park_neutral_switch == 0) ? 0 : 1;
+        data->fault_codes = 0;
+        data->idle_set_point = dframe80.idle_set_point;
+        data->idle_hot = dframe80.idle_hot;
+        data->uk2 = dframe80.uk2;
+        data->iac_position = dframe80.iac_position;
+        data->idle_error = ((uint16_t)dframe80.idle_error_hi << 8) | dframe80.idle_error_lo;
+        data->ignition_advance_offset = dframe80.ignition_advance_offset;
+        data->ignition_advance = (dframe80.ignition_advance * 0.5) - 24.0;
+        data->coil_time = (((uint16_t)dframe80.coil_time_hi << 8) | dframe80.coil_time_lo) * 0.002;
+        data->crankshaft_position_sensor = dframe80.crankshaft_position_sensor;
+        data->uk4 = dframe80.uk4;
+        data->uk5 = dframe80.uk5;
 
-    if (dframe80.dtc0 & 0x01)   // coolant temp sensor fault
-      data->fault_codes |= (1 << 0);
+        // update fault codes
+        if (dframe80.dtc0 & 0x01) { // coolant temp sensor fault
+            data->fault_codes |= (1 << 0);
+            data->coolant_temp_sensor_fault = true;
+        }
 
-    if (dframe80.dtc0 & 0x02)   // intake air temp sensor fault
-      data->fault_codes |= (1 << 1);
+        if (dframe80.dtc0 & 0x02) { // intake air temp sensor fault
+            data->fault_codes |= (1 << 1);
+            data->intake_air_temp_sensor_fault = true;
+        }
 
-    if (dframe80.dtc1 & 0x02)   // fuel pump circuit fault
-      data->fault_codes |= (1 << 2);
+        if (dframe80.dtc1 & 0x02) { // fuel pump circuit fault
+            data->fault_codes |= (1 << 2);
+            data->fuel_pump_circuit_fault = true;
+        }
 
-    if (dframe80.dtc1 & 0x80)   // throttle pot circuit fault
-      data->fault_codes |= (1 << 3);
+        if (dframe80.dtc1 & 0x80) { // throttle pot circuit fault
+            data->fault_codes |= (1 << 3);
+            data->throttle_pot_circuit_fault = true;
+        }
 
-    success = true;
-  }
+        // dataframe 0x7d
 
-  return success;
+        data->ignition_switch = dframe7d.ignition_switch;
+        data->throttle_angle = dframe7d.throttle_angle;
+        data->uk6 = dframe7d.uk6;
+        data->air_fuel_ratio = dframe7d.air_fuel_ratio;
+        data->dtc2 = dframe7d.dtc2;
+        data->lambda_voltage_mv = dframe7d.lambda_voltage * 5;
+        data->lambda_sensor_frequency = dframe7d.lambda_sensor_frequency;
+        data->lambda_sensor_dutycycle = dframe7d.lambda_sensor_dutycycle;
+        data->lambda_sensor_status = dframe7d.lambda_sensor_status;
+        data->closed_loop = dframe7d.closed_loop;
+        data->long_term_fuel_trim = dframe7d.long_term_fuel_trim; 
+        data->short_term_fuel_trim = dframe7d.short_term_fuel_trim;
+        data->carbon_canister_dutycycle = dframe7d.carbon_canister_dutycycle;
+        data->dtc3 = dframe7d.dtc3;
+        data->idle_base_pos = dframe7d.idle_base_pos;
+        data->uk7 = dframe7d.uk7;
+        data->dtc4 = dframe7d.dtc4;
+        data->ignition_advance2 = dframe7d.ignition_advance2;
+        data->idle_speed_offset = dframe7d.idle_speed_offset;
+        data->idle_error2= dframe7d.idle_error2;
+        data->uk10 = dframe7d.uk10;
+        data->dtc5 = dframe7d.dtc5;
+        data->uk11 = dframe7d.uk11;
+        data->uk12 = dframe7d.uk12;
+        data->uk13 = dframe7d.uk13;
+        data->uk14 = dframe7d.uk14;
+        data->uk15 = dframe7d.uk15;
+        data->uk16 = dframe7d.uk16;
+        data->uk1A = dframe7d.uk17;
+        data->uk1B = dframe7d.uk18;
+        data->uk1C = dframe7d.uk19;
+
+        success = true;
+    }
+
+    return success;
 }
 
 /**
@@ -353,7 +400,7 @@ bool mems_move_iac(mems_info* info, uint8_t desired_pos)
 /**
  * Sends a command to run an actuator test, and returns the single byte of data.
  */
-bool mems_test_actuator(mems_info* info, actuator_cmd cmd, uint8_t* data)
+bool mems_test_actuator(mems_info *info, actuator_cmd cmd, uint8_t *data)
 {
   bool status = false;
   uint8_t response = 0x00;

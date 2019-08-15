@@ -1,3 +1,4 @@
+#include "rosco.h"
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -6,7 +7,9 @@
 #include <strings.h>
 #include <stdlib.h>
 #include <libgen.h>
-#include "rosco.h"
+#include <sys/time.h>
+#include <time.h>
+#include <unistd.h>
 
 enum command_idx
 {
@@ -24,7 +27,8 @@ enum command_idx
   MC_Num_Commands = 11
 };
 
-static const char* commands[] = { "read",
+static const char* commands[] = { 
+  "read",
   "read-raw",
   "read-iac",
   "ptc",
@@ -37,6 +41,147 @@ static const char* commands[] = { "read",
   "interactive"
 };
 
+char *simple_current_time(void)
+{
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    struct timeval tv;
+    static char buffer[50];
+
+    gettimeofday(&tv, NULL);
+
+    sprintf(buffer, "%02d:%02d:%02d", tm.tm_hour, tm.tm_min, tm.tm_sec);
+    return buffer;
+}
+
+bool prefix(const char pre, const char *str)
+{
+    return (str[0] == pre);
+}
+
+int find_command(char *command)
+{
+    int cmd_idx = 0;
+
+    while ((cmd_idx < MC_Num_Commands) && (strcasecmp(command, commands[cmd_idx]) != 0))
+    {
+        cmd_idx += 1;
+    }
+
+    return cmd_idx;
+}
+
+int read_config(readmems_config *config)
+{
+  FILE *file = fopen("readmems.cfg", "r"); /* should check the result */
+  char line[200];
+  char *key;
+  char *value;
+  char *search = "=";
+  char comment = '#';
+  int cmd_idx = -1;
+  int len;
+
+  config->port = strdup("ttyecu");
+  config->command = strdup("read");
+  config->output = strdup("stdout");
+  config->loop = strdup("inf");
+  config->connection = strdup("nowait");
+
+  if (file)
+  {
+    while (fgets(line, sizeof(line), file))
+    {
+      if (strlen(line) > 1)
+      {
+        if (prefix(comment, line))
+        {
+          // skip comments
+        }
+        else
+        {
+          key = strtok(line, search);
+          value = strtok(NULL, search);
+
+          // remove newline
+          len = strlen(value);
+          if (value[len - 1] == '\n')
+            value[len - 1] = 0;
+
+          if (strcasecmp(key, "port") == 0)
+          {
+            config->port = strdup(value);
+          }
+
+          if (strcasecmp(key, "command") == 0)
+          {
+            config->command = strdup(value);
+          }
+
+          if (strcasecmp(key, "output") == 0)
+          {
+            config->output = strdup(value);
+          }
+
+          if (strcasecmp(key, "loop") == 0)
+          {
+            config->loop = strdup(value);
+          }
+
+          if (strcasecmp(key, "connection") == 0)
+          {
+            config->connection = strdup(value);
+          }
+        }
+      }
+    }
+
+    cmd_idx = find_command(config->command);
+  }
+  else
+  {
+    printf("no readmems.cfg found, using defaults\n");
+  }
+
+  fclose(file);
+
+  return cmd_idx;
+}
+
+char *current_date(void)
+{
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
+    static char buffer[50];
+
+    sprintf(buffer, "%4d-%02d-%02d-%02d%02d%02d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+    return buffer;
+}
+
+char *open_log_file(FILE **fp)
+{
+    static char filename[200];
+
+    sprintf(filename, "readmems-%s.csv", current_date());
+
+    // open the file for writing
+    *fp = fopen(filename, "w");
+
+    return filename;
+}
+
+int write_log(FILE **fp, char *line)
+{
+    if (*fp)
+        return fprintf(*fp, "%s", line);
+    else
+        return -1;
+}
+
+void delete_file(char *filename)
+{
+    remove(filename);
+}
 
 void printbuf(uint8_t* buf, unsigned int count)
 {
@@ -160,6 +305,8 @@ bool interactive_mode(mems_info* info, uint8_t* response_buffer)
   {
     printf("Error allocating command buffer memory.\n");
   }
+
+  return quit;
 }
 
 int main(int argc, char **argv)
@@ -171,10 +318,16 @@ int main(int argc, char **argv)
   mems_data_frame_7d frame7d;
   librosco_version ver;
   mems_info info;
-  uint8_t* frameptr;
+  uint8_t *frameptr;
   uint8_t bufidx;
   uint8_t readval = 0;
   uint8_t iac_limit_count = 80; // number of times to re-send an IAC move command when
+  char log_line[1024];
+  char *port;
+  bool connected = false;
+  bool wait_for_connection = false;
+  bool log_to_file = false;
+  FILE *fp = NULL;
 
   // the ECU is already reporting that the valve has
   // reached its requested position
@@ -188,42 +341,88 @@ int main(int argc, char **argv)
 
   ver = mems_get_lib_version();
 
-  if (argc < 3)
+  // read the config file for defaults
+  readmems_config config;
+  cmd_idx = read_config(&config);
+
+  // if the config is invalid or any parameters have been specified on the command line
+  // override the config
+  if ((argc > 1) || (cmd_idx == -1))
   {
-    printf("readmems using librosco v%d.%d.%d\n", ver.major, ver.minor, ver.patch);
-    printf("Diagnostic utility using ROSCO protocol for MEMS 1.6 systems\n");
-    printf("Usage: %s <serial device> <command> [read-loop-count]\n", basename(argv[0]));
-    printf(" where <command> is one of the following:\n");
-    for (cmd_idx = 0; cmd_idx < MC_Num_Commands; ++cmd_idx)
+    // show info if the command line is invalid
+    if (argc < 3)
     {
-      printf("\t%s\n", commands[cmd_idx]);
+      printf("readmems using librosco v%d.%d.%d\n", ver.major, ver.minor, ver.patch);
+      printf("Diagnostic utility using ROSCO protocol for MEMS 1.6 systems\n");
+      printf("Usage: %s <serial device> <command> [read-loop-count]\n", basename(argv[0]));
+      printf(" where <command> is one of the following:\n");
+      for (cmd_idx = 0; cmd_idx < MC_Num_Commands; ++cmd_idx)
+      {
+        printf("\t%s\n", commands[cmd_idx]);
+      }
+      printf(" and [read-loop-count] is either a number or 'inf' to read forever.\n");
+
+      return 0;
     }
-    printf(" and [read-loop-count] is either a number or 'inf' to read forever.\n");
 
-    return 0;
+    // find the index of the command to run
+    while ((cmd_idx < MC_Num_Commands) && (strcasecmp(argv[2], commands[cmd_idx]) != 0))
+    {
+      cmd_idx += 1;
+    }
+
+    if (cmd_idx >= MC_Num_Commands)
+    {
+      printf("Invalid command: %s\n", argv[2]);
+      return -1;
+    }
+
+    if (argc >= 4)
+    {
+      if (strcmp(argv[3], "inf") == 0)
+      {
+        read_inf = true;
+      }
+      else
+      {
+        read_loop_count = strtoul(argv[3], NULL, 0);
+      }
+    }
+
+    // assign the serial port
+    port = argv[1];
   }
-
-  while ((cmd_idx < MC_Num_Commands) && (strcasecmp(argv[2], commands[cmd_idx]) != 0))
+  else
   {
-    cmd_idx += 1;
-  }
+    printf("Using config:\nport: %s\ncommand: %s (%d)\noutput: %s\nloop: %s\n", config.port, config.command, cmd_idx, config.output, config.loop);
 
-  if (cmd_idx >= MC_Num_Commands)
-  {
-    printf("Invalid command: %s\n", argv[2]);
-    return -1;
-  }
-
-  if (argc >= 4)
-  {
-    if (strcmp(argv[3], "inf") == 0)
+    // set how many times to loop the command
+    // 'inf' for infinite
+    if (strcmp(config.loop, "inf") == 0)
     {
       read_inf = true;
     }
     else
     {
-      read_loop_count = strtoul(argv[3], NULL, 0);
+      read_loop_count = strtoul(config.loop, NULL, 0);
     }
+
+    // wait until connection becomes available
+    // this is useful when connecting to MEMS as it will retry until
+    // the ECU is powered on
+    if (strcmp(config.connection, "wait") == 0)
+    {
+        wait_for_connection= true;
+    }
+
+    // automatically save output to file rather than having to pipe stdio
+    if (strcmp(config.output, "stdout") != 0)
+    {
+      log_to_file = true;
+    }
+
+    // assign the serial port from configuration file
+    port = config.port;
   }
 
   if (cmd_idx != MC_Interactive)
@@ -236,12 +435,42 @@ int main(int argc, char **argv)
 #if defined(WIN32)
   // correct for microsoft's legacy nonsense by prefixing with "\\.\"
   strcpy(win32devicename, "\\\\.\\");
-  strncat(win32devicename, argv[1], 16);
-  if (mems_connect(&info, win32devicename))
+  strncat(win32devicename, config.port, 16);
+  port = win32devicename;
 #else
-  if (mems_connect(&info, argv[1]))
+  port = config.port;
 #endif
+
+  do
   {
+    printf("attempting to connect to %s\n", port);
+    connected = mems_connect(&info, port);
+
+    if (!connected)
+    {
+      // not connected, so pause and retry
+      if (wait_for_connection)
+      {
+        printf("waiting to retry connection to %s\n", port);
+        sleep(2);
+      }
+    }
+    else
+    {
+      // connected, no need to wait anymore
+      wait_for_connection = false;
+    }
+  } while ((wait_for_connection) && (!connected));
+
+  if (connected)
+  {
+    if (log_to_file) {
+      // open the log file if logging enabled
+      // the full path get stored in config.output variable
+      config.output = open_log_file(&fp);
+      printf("logging to %s\n", config.output);
+    }
+
     if (mems_init_link(&info, response_buffer))
     {
       printf("ECU responded to D0 command with: %02X %02X %02X %02X\n\n",
@@ -250,18 +479,92 @@ int main(int argc, char **argv)
       switch (cmd_idx)
       {
       case MC_Read:
+        // create header 
+        sprintf(log_line, "#time,"\
+                          "80x01-02_engine-rpm,80x03_coolant_temp,80x04_ambient_temp,80x05_intake_air_temp,80x06_fuel_temp,80x07_map_kpa,80x08_battery_voltage,80x09_throttle_pot,80x0A_idle_switch,80x0B_uk1,"\
+                          "80x0C_park_neutral_switch,80x0D-0E_fault_codes,80x0F_idle_set_point,80x10_idle_hot,80x11_uk2,80x12_iac_position,80x13-14_idle_error,80x15_ignition_advance_offset,80x16_ignition_advance,80x17-18_coil_time,"\
+                          "80x19_crankshaft_position_sensor,80x1A_uk4,80x1B_uk5,"\
+                          "7dx01_ignition_switch,7dx02_throttle_angle,7dx03_uk6,7dx04_air_fuel_ratio,7dx05_dtc2,7dx06_lambda_voltage,7dx07_lambda_sensor_frequency,7dx08_lambda_sensor_dutycycle,7dx09_lambda_sensor_status,7dx0A_closed_loop,"\
+                          "7dx0B_long_term_fuel_trim,7dx0C_short_term_fuel_trim,7dx0D_carbon_canister_dutycycle,7dx0E_dtc3,7dx0F_idle_base_pos,7dx10_uk7,7dx11_dtc4,7dx12_ignition_advance2,7dx13_idle_speed_offset,7dx14_idle_error2,"\
+                          "7dx14-15_uk10,7dx16_dtc5,7dx17_uk11,7dx18_uk12,7dx19_uk13,7dx1A_uk14,7dx1B_uk15,7dx1C_uk16,7dx1D_uk17,7dx1E_uk18,7dx1F_uk19\n");
+        printf("%s", log_line);
+
+        // write to log file if enabled
+        if (fp) write_log(&fp, log_line);
+
         while (read_inf || (read_loop_count-- > 0))
         {
           if (mems_read(&info, &data))
           {
-            printf("RPM: %u\nCoolant (deg C): %u\nAmbient (deg C): %u\nIntake air (deg C): %u\n"
-                   "Fuel temp (deg C): %u\nMAP (kPa): %f\nMain voltage: %f\nThrottle pot voltage: %f\n"
-                   "Idle switch: %u\nPark/neutral switch: %u\nFault codes: %u\nIAC position: %u\n"
-                   "-------------\n",
-                   data.engine_rpm, data.coolant_temp_c, data.ambient_temp_c,
-                   data.intake_air_temp_c, data.fuel_temp_c, data.map_kpa, data.battery_voltage,
-                   data.throttle_pot_voltage, data.idle_switch, data.park_neutral_switch,
-                   data.fault_codes, data.iac_position);
+            sprintf(log_line, "%s,"\
+                              "%u,%u,%u,%u,%u,%f,%f,%f,%u,%u,"\
+                              "%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,"\
+                              "%u,%u,%u,"\
+                              "%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,"\
+                              "%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,"\
+                              "%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u"\
+                              "\n",
+                              simple_current_time(),
+                              data.engine_rpm,
+                              data.coolant_temp_c,
+                              data.ambient_temp_c,
+                              data.intake_air_temp_c,
+                              data.fuel_temp_c,
+                              data.map_kpa,
+                              data.battery_voltage,
+                              data.throttle_pot_voltage,
+                              data.idle_switch,
+                              data.uk1,
+                              data.park_neutral_switch,
+                              data.fault_codes,
+                              data.idle_set_point,
+                              data.idle_hot,
+                              data.uk2,
+                              data.iac_position,
+                              data.idle_error,
+                              data.ignition_advance_offset,
+                              data.ignition_advance,
+                              data.coil_time,
+                              data.crankshaft_position_sensor,
+                              data.uk4,
+                              data.uk5,
+                              data.ignition_switch,
+                              data.throttle_angle,
+                              data.uk6,
+                              data.air_fuel_ratio,
+                              data.dtc2,
+                              data.lambda_voltage_mv,
+                              data.lambda_sensor_frequency,
+                              data.lambda_sensor_dutycycle,
+                              data.lambda_sensor_status,
+                              data.closed_loop,
+                              data.long_term_fuel_trim,
+                              data.short_term_fuel_trim,
+                              data.carbon_canister_dutycycle,
+                              data.dtc3,
+                              data.idle_base_pos,
+                              data.uk7,
+                              data.dtc4,
+                              data.ignition_advance2,
+                              data.idle_speed_offset,
+                              data.idle_error2,
+                              (((uint16_t)data.idle_error2 << 8 ) | data.uk10),
+                              data.dtc5,
+                              data.uk11,
+                              data.uk12,
+                              data.uk13,
+                              data.uk14,
+                              data.uk15,
+                              data.uk16,
+                              data.uk1A,
+                              data.uk1B,
+                              data.uk1C
+                              );
+            printf("%s", log_line);
+
+            // write to log file if enabled
+            if (fp) write_log(&fp, log_line);
+            
             success = true;
           }
         }
@@ -383,6 +686,19 @@ int main(int argc, char **argv)
   }
 
   mems_cleanup(&info);
+
+  // close any open files
+  if (fp) {   
+      // delete empty log files
+      fseek(fp, 0L, SEEK_END);
+      
+      if (ftell(fp) < 1000) {
+        printf("Output file too small, removing.\n");
+        delete_file(config.output);
+      }
+
+      fclose(fp);
+  }
 
   return success ? 0 : -2;
 }

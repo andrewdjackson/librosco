@@ -3,8 +3,9 @@ project (librosco)
 
 set(PROJECT_NAME "librosco")
 set(PROJECT_DESCRIPTION "Library supporting serial communication with the Rover MEMS 1.6 engine control module via the ROSCO protocol")
-set(PROJECT_AUTHOR "Colin Bourassa <colin.bourassa@gmail.com>")
-set(PROJECT_URL "https://github.com/colinbourassa/librosco")
+set(PROJECT_AUTHOR "Forked by Andrew Jackson from Colin Bourassa <colin.bourassa@gmail.com>")
+set(PROJECT_URL "https://github.com/andrewdjackson/librosco")
+set (CMAKE_BUILD_TYPE Debug)
 
 # for Darwin support
 if(POLICY CMP0042)
@@ -15,7 +16,7 @@ if(POLICY CMP0068)
   cmake_policy(SET CMP0068 OLD)
 endif()
 
-set (LIBROSCO_VER_MAJOR 1)
+set (LIBROSCO_VER_MAJOR 2)
 set (LIBROSCO_VER_MINOR 0)
 set (LIBROSCO_VER_PATCH 0)
 set (LIBROSCO_VERSION "${LIBROSCO_VER_MAJOR}.${LIBROSCO_VER_MINOR}.${LIBROSCO_VER_PATCH}")

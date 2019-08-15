@@ -7,6 +7,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdio.h>
 
 #if defined(WIN32)
   #include <windows.h>
@@ -38,7 +39,9 @@ enum mems_data_command
     MEMS_ReqData80      = 0x80,
     MEMS_ClearFaults    = 0xCC,
     MEMS_Heartbeat      = 0xF4,
-    MEMS_GetIACPosition = 0xFB
+    MEMS_GetIACPosition = 0xFB,
+    MEMS_ResetAdj		    = 0x0F,
+	  MEMS_ResetECU		    = 0xFA
 };
 
 /**
@@ -50,15 +53,12 @@ enum mems_data_command
  */
 enum mems_actuator_command
 {
-    MEMS_FuelPumpOn     = 0x11,
+	  MEMS_FuelPumpOn     = 0x11,
     MEMS_FuelPumpOff    = 0x01,
     MEMS_PTCRelayOn     = 0x12,
     MEMS_PTCRelayOff    = 0x02,
     MEMS_ACRelayOn      = 0x13,
     MEMS_ACRelayOff     = 0x03,
-#if 0
-    /* I currently have no way to test these commands,
-       so I'm excluding them from the build for now. */
     MEMS_PurgeValveOn   = 0x18,
     MEMS_PurgeValveOff  = 0x08,
     MEMS_O2HeaterOn     = 0x19,
@@ -68,12 +68,25 @@ enum mems_actuator_command
     MEMS_Fan1On         = 0x1D,
     MEMS_Fan1Off        = 0x0D,
     MEMS_Fan2On         = 0x1E,
-    MEMS_Fan2Off        = 0x0E
-#endif
+    MEMS_Fan2Off        = 0x0E,
+	  MEMS_Fan3On			    = 0x6F,
+	  MEMS_Fan3Off		    = 0x67,
+	  MEMS_WasteGateOn	  = 0x1B,
+	  MEMS_WasteGateOff	  = 0x0B,
     MEMS_TestInjectors  = 0xF7,
+	  MEMS_TestInjectorsMPi	= 0xEF,
     MEMS_FireCoil       = 0xF8,
     MEMS_OpenIAC        = 0xFD,
-    MEMS_CloseIAC       = 0xFE
+    MEMS_CloseIAC       = 0xFE,
+	  MEMS_AllActuatorsOff	= 0xF4,
+    MEMS_FuelTrimPlus   = 0x79,
+    MEMS_FuelTrimMinus  = 0x7A,
+    MEMS_IdleDecayPlus  = 0x89,
+    MEMS_IdleDecayMinus = 0x8A,
+    MEMS_IdleSpeedPlus  = 0x91,
+    MEMS_IdleSpeedMinus = 0x92,
+	  MEMS_IgnitionAdvancePlus  = 0x93,
+    MEMS_IgnitionAdvanceMinus = 0x94
 };
 
 typedef enum mems_actuator_command actuator_cmd;
@@ -84,37 +97,37 @@ typedef enum mems_actuator_command actuator_cmd;
 typedef struct
 {
   uint8_t bytes_in_frame;
-  uint8_t b;
-  uint8_t c;
-  uint8_t d;
-  uint8_t e;
-  uint8_t f;
-  uint8_t g;
+  uint8_t ignition_switch;
+  uint8_t throttle_angle;
+  uint8_t uk6;
+  uint8_t air_fuel_ratio;
+  uint8_t dtc2;
   uint8_t lambda_voltage;
-  uint8_t i;
-  uint8_t j;
+  uint8_t lambda_sensor_frequency;
+  uint8_t lambda_sensor_dutycycle;
+  uint8_t lambda_sensor_status;
   uint8_t closed_loop;
-  uint8_t l;
-  uint8_t fuel_trim;
-  uint8_t n;
-  uint8_t o;
+  uint8_t long_term_fuel_trim;
+  uint8_t short_term_fuel_trim;
+  uint8_t carbon_canister_dutycycle;
+  uint8_t dtc3;
   uint8_t idle_base_pos;
-  uint8_t q;
-  uint8_t r;
-  uint8_t s;
-  uint8_t t;
-  uint8_t u;
-  uint8_t v;
-  uint8_t w;
-  uint8_t x;
-  uint8_t y;
-  uint8_t z;
-  uint8_t aa;
-  uint8_t bb;
-  uint8_t cc;
-  uint8_t dd;
-  uint8_t ee;
-  uint8_t ff;
+  uint8_t uk7;
+  uint8_t dtc4;
+  uint8_t ignition_advance2;
+  uint8_t idle_speed_offset;
+  uint8_t idle_error2;
+  uint8_t uk10;
+  uint8_t dtc5;
+  uint8_t uk11;
+  uint8_t uk12;
+  uint8_t uk13;
+  uint8_t uk14;
+  uint8_t uk15;
+  uint8_t uk16;
+  uint8_t uk17;
+  uint8_t uk18;
+  uint8_t uk19;
 } mems_data_frame_7d;
 
 /**
@@ -133,23 +146,23 @@ typedef struct
     uint8_t battery_voltage;
     uint8_t throttle_pot;
     uint8_t idle_switch;
-    uint8_t b;
+    uint8_t uk1;
     uint8_t park_neutral_switch;
     uint8_t dtc0;
     uint8_t dtc1;
-    uint8_t c;
-    uint8_t d;
-    uint8_t e;
+    uint8_t idle_set_point;
+    uint8_t idle_hot;
+    uint8_t uk2;
     uint8_t iac_position;
     uint8_t idle_error_hi;
     uint8_t idle_error_lo;
-    uint8_t f;
+    uint8_t ignition_advance_offset;
     uint8_t ignition_advance;
     uint8_t coil_time_hi;
     uint8_t coil_time_lo;
-    uint8_t g;
-    uint8_t h;
-    uint8_t i;
+    uint8_t crankshaft_position_sensor;
+    uint8_t uk4;
+    uint8_t uk5;
 } mems_data_frame_80;
 
 /**
@@ -162,10 +175,11 @@ typedef struct
     uint8_t ambient_temp_c;
     uint8_t intake_air_temp_c;
     uint8_t fuel_temp_c;
-    float map_kpa;
-    float battery_voltage;
-    float throttle_pot_voltage;
+    float   map_kpa;
+    float   battery_voltage;
+    float   throttle_pot_voltage;
     uint8_t idle_switch;
+    uint8_t uk1;
     uint8_t park_neutral_switch;
     /**
      * Bit 0: Coolant temp sensor CCT fault (1)
@@ -174,15 +188,57 @@ typedef struct
      * Bit 3: Throttle pot circuit fault (16)
      */
     uint8_t fault_codes;
+    uint8_t idle_set_point;
+    uint8_t idle_hot;
+    uint8_t uk2;
     uint8_t iac_position;
     uint16_t idle_error;
-    float ignition_advance;
-    float coil_time;
-    uint16_t lambda_voltage_mv;
-    uint8_t fuel_trim;
+    uint8_t ignition_advance_offset;
+    uint8_t ignition_advance;
+    uint16_t coil_time;
+    uint8_t crankshaft_position_sensor;
+    uint8_t uk4;
+    uint8_t uk5;
+    //******dframe 7**********************************
+    uint8_t ignition_switch;
+    uint8_t throttle_angle;
+    uint8_t uk6;
+    uint8_t air_fuel_ratio;
+    uint8_t dtc2;
+    uint8_t lambda_voltage_mv;
+    uint8_t lambda_sensor_frequency;
+    uint8_t lambda_sensor_dutycycle;
+    uint8_t lambda_sensor_status;
     uint8_t closed_loop;
+    uint8_t long_term_fuel_trim; 
+    uint8_t short_term_fuel_trim;
+    uint8_t carbon_canister_dutycycle;
+    uint8_t dtc3;
     uint8_t idle_base_pos;
-} mems_data;
+    uint8_t uk7;
+    uint8_t dtc4;
+    uint8_t ignition_advance2;
+    uint8_t idle_speed_offset;
+    uint8_t idle_error2;
+    uint8_t uk10;
+    uint8_t dtc5;
+    uint8_t uk11;
+    uint8_t uk12;
+    uint8_t uk13;
+    uint8_t uk14;
+    uint8_t uk15;
+    uint8_t uk16;
+    uint8_t uk1A;
+    uint8_t uk1B;
+    uint8_t uk1C;
+    uint8_t uk1E;
+    uint8_t uk1F;
+    bool coolant_temp_sensor_fault;
+    bool intake_air_temp_sensor_fault;
+    bool fuel_pump_circuit_fault;
+    bool throttle_pot_circuit_fault;
+}
+mems_data;
 
 /**
  * Major/minor/patch version numbers for this build of the library
@@ -214,6 +270,26 @@ typedef struct
     pthread_mutex_t mutex;
 #endif
 } mems_info;
+
+typedef struct
+{
+    char* port;
+    char* command;
+    char* output;
+    char* loop;
+    char* connection;
+} readmems_config;
+
+char *simple_current_time(void);
+bool prefix(const char pre, const char *str);
+int find_command(char *command);
+int read_config(readmems_config *config);
+
+char *open_log_file(FILE **fp);
+char *current_date(void);
+int write_log(FILE **fp, char *line);
+void delete_file(char *filename);
+int get_file_size(FILE **fp);
 
 void mems_init(mems_info* info);
 bool mems_init_link(mems_info* info, uint8_t* d0_response_buffer);
