@@ -283,7 +283,7 @@ typedef struct
 char *simple_current_time(void);
 bool prefix(const char pre, const char *str);
 int find_command(char *command);
-int read_config(readmems_config *config);
+int read_config(readmems_config *config, char* path);
 
 char *open_log_file(FILE **fp);
 char *current_date(void);

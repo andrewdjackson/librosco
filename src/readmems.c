@@ -75,9 +75,9 @@ int find_command(char *command)
     return cmd_idx;
 }
 
-int read_config(readmems_config *config)
+int read_config(readmems_config *config, char* path)
 {
-  FILE *file = fopen("readmems.cfg", "r"); /* should check the result */
+  FILE *file;
   char line[200];
   char *key;
   char *value;
@@ -86,6 +86,7 @@ int read_config(readmems_config *config)
   int cmd_idx = -1;
   int len;
 
+  file = fopen(path, "r");
   config->port = strdup("ttyecu");
   config->command = strdup("read");
   config->output = strdup("stdout");
@@ -94,6 +95,8 @@ int read_config(readmems_config *config)
 
   if (file)
   {
+    printf("using config from %s\n", path);
+
     while (fgets(line, sizeof(line), file))
     {
       if (strlen(line) > 1)
@@ -385,7 +388,7 @@ bool interactive_mode(mems_info* info, uint8_t* response_buffer)
 int main(int argc, char **argv)
 {
   bool success = false;
-  int cmd_idx = 0;
+  int cmd_idx = -1;
   mems_data data;
   mems_data_frame_80 frame80;
   mems_data_frame_7d frame7d;
@@ -401,6 +404,7 @@ int main(int argc, char **argv)
   bool wait_for_connection = false;
   bool log_to_file = false;
   FILE *fp = NULL;
+  char *config_file;
 
   // the ECU is already reporting that the valve has
   // reached its requested position
@@ -416,11 +420,18 @@ int main(int argc, char **argv)
 
   // read the config file for defaults
   readmems_config config;
-  cmd_idx = read_config(&config);
+  config_file = strdup("readmems.cfg");
+
+  // if only 1 argument then expect the config file path
+  if (argc == 2) {
+    config_file = argv[1];
+  }
+  
+  cmd_idx = read_config(&config, config_file);
 
   // if the config is invalid or any parameters have been specified on the command line
   // override the config
-  if ((argc > 1) || (cmd_idx == -1))
+  if ((argc > 2) || (cmd_idx == -1))
   {
     // show info if the command line is invalid
     if (argc < 3)
