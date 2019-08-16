@@ -14,17 +14,17 @@ version of memsgauge and represents that data structure in librosco.
 
 The readmems application has been extended as follows:
 
-1. 'readmems.cfg' configuration file can be used to specify static parameters. This will be ignored
-   if command line parameters are used.
+1. 'readmems.cfg' configuration file can be used to specify static parameters. 
+   This will be ignored if command line parameters are used.
 
-2. 'read' command will produce a mems-scan output csv format, specifing an output type of 'file' in the
-   readmems.cfg will product a CSV file.
+2. 'read' command can produce a output file in mems-scan format. 
+   Specifing an output type of 'file' in the readmems.cfg will product a readmems-YYYY-MM-DD-HH_MM_SS.CSV file.
 
 3. CSV files are chunked into approximately 10 minute readings
 
 4. 'read' command is restricted to give regular 2 reads per second
 
-5. Connection wait can be configured in readmems.cfg to force retries every 2 seconds until a connection
+5. Wait for Connection can be configured in readmems.cfg to force retries every 2 seconds until a connection
    to the ECU has been established.
 
 ------------------------------------------------------------------------
