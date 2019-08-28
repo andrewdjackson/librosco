@@ -300,3 +300,8 @@ else()
 
 endif()
 
+# copy Python bindings
+execute_process(COMMAND "${CMAKE_SOURCE_DIR}/pybuild.sh")
+
+file(COPY "build/lib.macosx-10.14-x86_64-3.6/src/_mems.cpython-36m-darwin.so" DESTINATION "${INSTALL_BIN_DIR}")
+file(COPY "${CMAKE_SOURCE_DIR}/src/app.py" DESTINATION "${INSTALL_BIN_DIR}")

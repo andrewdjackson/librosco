@@ -32,7 +32,6 @@ int16_t mems_read_serial(mems_info* info, uint8_t* buffer, uint16_t quantity)
   int16_t totalBytesRead = 0;
   int16_t bytesRead = -1;
   uint8_t *buffer_pt = buffer;
-  int x = 0;
 
   if (mems_is_connected(info))
   {
@@ -71,7 +70,6 @@ int16_t mems_read_serial(mems_info* info, uint8_t* buffer, uint16_t quantity)
 int16_t mems_write_serial(mems_info* info, uint8_t* buffer, uint16_t quantity)
 {
   int16_t bytesWritten = -1;
-  int x = 0;
 
   if (mems_is_connected(info))
   {
