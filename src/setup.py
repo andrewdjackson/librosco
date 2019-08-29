@@ -4,6 +4,8 @@ import numpy.distutils.misc_util
 c_ext = Extension("src/_mems", ["src/_mems.c", "src/protocol.c", "src/setup.c"])
 
 setup(
+    name = '_mems', 
+    version = '1.0',
     ext_modules=[c_ext],
     include_dirs=numpy.distutils.misc_util.get_numpy_include_dirs(),
 )
