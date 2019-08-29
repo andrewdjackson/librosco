@@ -1,5 +1,14 @@
 import _mems
-x = _mems.read(2.0, 1.0, [-1.0, 4.2, 30.6], [-1.5, 8.0, 63.0],[1.0, 1.5, 0.6])
-y = _mems.connect('dev://ttyecu')
-print(x)
+v = _mems.version()
+print(v)
+
+y = _mems.connect("/dev/ttys005")
 print(y)
+
+if y['connected']:
+   x = _mems.read()
+   print(x)
+
+if y['connected']:
+   x = _mems.command('7d')
+   print(x)
