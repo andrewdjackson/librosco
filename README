@@ -1,13 +1,33 @@
-------------
-librosco
-https://github.com/colinbourassa/librosco
+librosco 2.0.0
+https://gitbuh.com/andrewdjackson/librosco
 
-Download releases:
-http://github.com/colinbourassa/librosco/releases/latest
+Forked from librosco 1.0.0
+https://github.com/colinbourassa/librosco
 
 Discussion group:
 https://groups.google.com/forum/#!forum/mems-diagnostics
-------------
+
+------------------------------------------------------------------------
+
+This version of librosco takes the extended diagnostic information from haros mems-scan
+version of memsgauge and represents that data structure in librosco.
+
+The readmems application has been extended as follows:
+
+1. 'readmems.cfg' configuration file can be used to specify static parameters. 
+   This will be ignored if command line parameters are used.
+
+2. 'read' command can produce a output file in mems-scan format. 
+   Specifing an output type of 'file' in the readmems.cfg will product a readmems-YYYY-MM-DD-HH_MM_SS.CSV file.
+
+3. CSV files are chunked into approximately 10 minute readings
+
+4. 'read' command is restricted to give regular 2 reads per second
+
+5. Wait for Connection can be configured in readmems.cfg to force retries every 2 seconds until a connection
+   to the ECU has been established.
+
+------------------------------------------------------------------------
 
 librosco is a cross-platform library that is capable of communicating
 with the Rover Modular Engine Management System (MEMS) via the ECU's diagnostic
@@ -25,12 +45,6 @@ to display data. Included in this archive is a simple command line utility
 (named "readmems") which uses the library to retrieve data and test actuators.
 The MEMSGauge project provides a graphical front-end:
 
-https://github.com/colinbourassa/memsgauge
-
-Comments, questions, bug reports, and bugfixes should be directed to
-colin.bourassa@gmail.com. Please include the version number of the library in
-any correspondence.
-
 -------
 License
 -------
@@ -41,15 +55,6 @@ Disclaimer
 ----------
 While this software has been shown to be reliable and is provided in good
 faith, it is provided with ABSOLUTELY NO WARRANTY.
-
----------
-Changelog
----------
-0.1.7: Added support for more data fields
-       Fixed win32 build
-       Renamed library to "librosco"
-0.1.1: Bugfix in initial connect sequence
-0.1.0: Initial release
 
 -------------
 Compatibility

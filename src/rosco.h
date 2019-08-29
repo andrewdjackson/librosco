@@ -283,13 +283,15 @@ typedef struct
 char *simple_current_time(void);
 bool prefix(const char pre, const char *str);
 int find_command(char *command);
-int read_config(readmems_config *config);
+int read_config(readmems_config *config, char* path);
 
 char *open_log_file(FILE **fp);
 char *current_date(void);
+char *split_log_file(FILE **fp, int size);
 int write_log(FILE **fp, char *line);
 void delete_file(char *filename);
-int get_file_size(FILE **fp);
+int get_file_size(FILE *fp);
+char *write_memsscan_header(FILE *fp);
 
 void mems_init(mems_info* info);
 bool mems_init_link(mems_info* info, uint8_t* d0_response_buffer);
