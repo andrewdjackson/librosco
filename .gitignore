@@ -22,3 +22,8 @@ librosco.pc
 .vscode/launch.json
 .vscode/settings.json
 .vscode/tasks.json
+MANIFEST
+librosco.egg-info/dependency_links.txt
+librosco.egg-info/PKG-INFO
+librosco.egg-info/SOURCES.txt
+librosco.egg-info/top_level.txt
