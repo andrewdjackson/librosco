@@ -4,9 +4,9 @@
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 
 static char module_docstring[] =
-    "This module provides an interface for reading MEMS ECU using C.";
+    "Python Extension for Rover MEMS ECU library librosco 2.0.0";
 static char mems_docstring[] =
-    "Read the MEMS ECU";
+    "Python Extension for Rover MEMS ECU library librosco 2.0.0";
 
 static PyObject *get_version(PyObject *self, PyObject *args);
 static PyObject *read_mems(PyObject *self, PyObject *args);
@@ -30,13 +30,13 @@ static mems_info info;
 static bool connected;
 static bool initialised;
 
-PyMODINIT_FUNC PyInit__mems(void)
+PyMODINIT_FUNC PyInit_librosco(void)
 {
 
    PyObject *module;
    static struct PyModuleDef moduledef = {
        PyModuleDef_HEAD_INIT,
-       "_mems",
+       "librosco",
        module_docstring,
        -1,
        module_methods,

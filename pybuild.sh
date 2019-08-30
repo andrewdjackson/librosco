@@ -1,1 +1,2 @@
-python src/setup.py build_ext  #--inplace
+python pylibrosco/setup.py build_ext
+python pylibrosco/setup.py sdist
