@@ -1,4 +1,4 @@
-#include <Python.h>
+#include <python.h>
 #include "rosco.h"
 
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
@@ -22,7 +22,7 @@ static PyMethodDef module_methods[] = {
     {"version", get_version, METH_VARARGS, mems_docstring},
     {"read", read_mems, METH_VARARGS, mems_docstring},
     {"connect", connect_mems, METH_VARARGS, mems_docstring},
-    {"command", interactive_command_mems, METH_VARARGS, mems_docstring},
+    {"send", interactive_command_mems, METH_VARARGS, mems_docstring},
     {NULL, NULL, 0, NULL}};
 
 static mems_data data;

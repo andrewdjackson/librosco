@@ -11,5 +11,5 @@ if y['connected']:
    print(x)
 
 if y['connected']:
-   x = librosco.command('7d')
+   x = librosco.send('7d')
    print(x)
