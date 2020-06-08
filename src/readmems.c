@@ -54,7 +54,7 @@ char *simple_current_time(void)
 
     gettimeofday(&tv, NULL);
 
-    sprintf(buffer, "%02d:%02d:%02d", tm.tm_hour, tm.tm_min, tm.tm_sec);
+    sprintf(buffer, "%02d:%02d:%02d.000", tm.tm_hour, tm.tm_min, tm.tm_sec);
     return buffer;
 }
 
@@ -244,7 +244,7 @@ char *write_memsscan_header(FILE *fp)
                       "80x19_crankshaft_position_sensor,80x1A_uk4,80x1B_uk5,"\
                       "7dx01_ignition_switch,7dx02_throttle_angle,7dx03_uk6,7dx04_air_fuel_ratio,7dx05_dtc2,7dx06_lambda_voltage,7dx07_lambda_sensor_frequency,7dx08_lambda_sensor_dutycycle,7dx09_lambda_sensor_status,7dx0A_closed_loop,"\
                       "7dx0B_long_term_fuel_trim,7dx0C_short_term_fuel_trim,7dx0D_carbon_canister_dutycycle,7dx0E_dtc3,7dx0F_idle_base_pos,7dx10_uk7,7dx11_dtc4,7dx12_ignition_advance2,7dx13_idle_speed_offset,7dx14_idle_error2,"\
-                      "7dx14-15_uk10,7dx16_dtc5,7dx17_uk11,7dx18_uk12,7dx19_uk13,7dx1A_uk14,7dx1B_uk15,7dx1C_uk16,7dx1D_uk17,7dx1E_uk18,7dx1F_uk19\n");
+                      "7dx14-15_uk10,7dx16_dtc5,7dx17_uk11,7dx18_uk12,7dx19_uk13,7dx1A_uk14,7dx1B_uk15,7dx1C_uk16,7dx1D_uk17,7dx1E_uk18,7dx1F_uk19,0x7d_raw,0x80_raw\n");
     
     printf("%s", header);
 
@@ -570,14 +570,17 @@ int main(int argc, char **argv)
         {
           if (mems_read(&info, &data))
           {
+            //convert_dataframe_to_string(raw80, &data.raw80, 28);
+            //convert_dataframe_to_string(raw7d, &data.raw7d, 32);
+
             sprintf(log_line, "%s,"\
                               "%u,%u,%u,%u,%u,%f,%f,%f,%u,%u,"\
                               "%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,"\
                               "%u,%u,%u,"\
                               "%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,"\
                               "%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,"\
-                              "%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u"\
-                              "\n",
+                              "%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,"\
+                              "80%s,7d%s\n",
                               simple_current_time(),
                               data.engine_rpm,
                               data.coolant_temp_c,
@@ -632,7 +635,9 @@ int main(int argc, char **argv)
                               data.uk16,
                               data.uk1A,
                               data.uk1B,
-                              data.uk1C
+                              data.uk1C,
+                              data.raw80,
+                              data.raw7d
                               );
             printf("%s", log_line);
 
@@ -642,12 +647,12 @@ int main(int argc, char **argv)
             // determine whether we need to split the output into manageable files
             // specify max size in Mb 
             //
-            // reading from MEMS at ~2 readings per second
-            // 240Kb will record in 10 minute chunks
+            // reading from MEMS at ~1 readings per second
+            // 240Kb will record in 20 minute chunks
             config.output = split_log_file(&fp, 240000);
 
-            // force a sleep of 500ms to get 2 readings per second 
-            sleep_ms(500);
+            // force a sleep of 950ms to get 1 readings per second 
+            sleep_ms(950);
 
             success = true;
           }

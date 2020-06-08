@@ -237,6 +237,8 @@ typedef struct
     bool intake_air_temp_sensor_fault;
     bool fuel_pump_circuit_fault;
     bool throttle_pot_circuit_fault;
+    char raw7d[100];
+    char raw80[100];
 }
 mems_data;
 

@@ -21,6 +21,18 @@
 #include "rosco.h"
 #include "rosco_internal.h"
 
+char *convert_dataframe_to_string(char *buf, void *dframe, int size)    
+{
+  unsigned int len = 0; 
+
+  for (int i=0; i<size; i++) {
+    unsigned char *b = (unsigned char *)&dframe[i];
+    len += sprintf(buf + len, "%02x", *b);
+  }
+
+  return buf;
+}
+
 /**
  * Reads bytes from the serial device using an OS-specific call.
  * @param buffer Buffer into which data should be read
@@ -255,6 +267,8 @@ bool mems_read(mems_info *info, mems_data *data)
   bool success = false;
   static mems_data_frame_80 dframe80;
   static mems_data_frame_7d dframe7d;
+  char *raw7d;
+  char *raw80;
 
   if (mems_read_raw(info, &dframe80, &dframe7d))
   {
@@ -343,6 +357,9 @@ bool mems_read(mems_info *info, mems_data *data)
     data->uk1A = dframe7d.uk17;
     data->uk1B = dframe7d.uk18;
     data->uk1C = dframe7d.uk19;
+
+    convert_dataframe_to_string(data->raw80, &dframe80, sizeof(mems_data_frame_80));
+    convert_dataframe_to_string(data->raw7d, &dframe7d, sizeof(mems_data_frame_7d));
 
     success = true;
   }
