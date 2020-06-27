@@ -113,6 +113,7 @@ if (MINGW)
   # statically link against the C MinGW lib to avoid incurring an additional DLL dependency
   set (CMAKE_SHARED_LINKER_FLAGS "-static-libgcc")
   set (CMAKE_EXE_LINKER_FLAGS "-static-libgcc")
+  set (DCMAKE_BUILD_TYPE "Debug")
 
   # convert proper Unix-style newline characters into Windows-style
   configure_file ("${CMAKE_SOURCE_DIR}/README" "${CMAKE_BINARY_DIR}/README.TXT" NEWLINE_STYLE WIN32)
