@@ -636,8 +636,8 @@ int main(int argc, char **argv)
                               data.uk1A,
                               data.uk1B,
                               data.uk1C,
-                              data.raw80,
-                              data.raw7d
+                              data.raw7d,
+                              data.raw80
                               );
             printf("%s", log_line);
 
