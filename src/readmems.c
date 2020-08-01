@@ -10,6 +10,7 @@
 #include <sys/time.h>
 #include <time.h>
 #include <unistd.h>
+#include <syslog.h>
 
 #ifdef WIN32
 #include <windows.h>
@@ -96,6 +97,7 @@ int read_config(readmems_config *config, char* path)
   if (file)
   {
     printf("using config from %s\n", path);
+    syslog(LOG_NOTICE, "using config from %s", path);
 
     while (fgets(line, sizeof(line), file))
     {
@@ -148,6 +150,7 @@ int read_config(readmems_config *config, char* path)
   else
   {
     printf("no readmems.cfg found, using defaults\n");
+    syslog(LOG_NOTICE, "no readmes.cfg, using defaults");
   }
 
   fclose(file);
@@ -208,6 +211,7 @@ char *split_log_file(FILE **fp, int size)
       write_memsscan_header(*fp);
 
       printf("split log file, new file created %s\n\n", filename);
+      syslog(LOG_NOTICE, "split log file, new file created %s\n\n", filename);
     }
   }    
   
@@ -356,11 +360,13 @@ bool interactive_mode(mems_info* info, uint8_t* response_buffer)
             else
             {
               printf("No response from ECU.\n");
+              syslog (LOG_ERR, "No response from ECU.");
             }
           }
           else
           {
             printf("Error: failed to write command byte to serial port.\n");
+            syslog (LOG_ERR, "Error: failed to write command byte to serial port.");
           }
         }
         else
@@ -405,6 +411,10 @@ int main(int argc, char **argv)
   bool log_to_file = false;
   FILE *fp = NULL;
   char *config_file;
+
+  // set up syslog
+  setlogmask (LOG_UPTO (LOG_NOTICE));
+  openlog ("readmems", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL1);
 
   // the ECU is already reporting that the valve has
   // reached its requested position
@@ -479,6 +489,7 @@ int main(int argc, char **argv)
   else
   {
     printf("Using config:\nport: %s\ncommand: %s (%d)\noutput: %s\nloop: %s\n", config.port, config.command, cmd_idx, config.output, config.loop);
+    syslog (LOG_NOTICE, "Using config {port: %s, command: %s (%d), output: %s, loop: %s}", config.port, config.command, cmd_idx, config.output, config.loop);
 
     // set how many times to loop the command
     // 'inf' for infinite
@@ -512,6 +523,7 @@ int main(int argc, char **argv)
   if (cmd_idx != MC_Interactive)
   {
     printf("Running command: %s\n", commands[cmd_idx]);
+    syslog (LOG_NOTICE, "Running command: %s", commands[cmd_idx]);
   }
 
   mems_init(&info);
@@ -528,6 +540,7 @@ int main(int argc, char **argv)
   do
   {
     printf("attempting to connect to %s\n", port);
+    syslog (LOG_NOTICE, "attempting to connect to %s", port);
     connected = mems_connect(&info, port);
 
     if (!connected)
@@ -536,6 +549,7 @@ int main(int argc, char **argv)
       if (wait_for_connection)
       {
         printf("waiting to retry connection to %s\n", port);
+        syslog (LOG_NOTICE,"waiting to retry connection to %s", port);
         sleep(2);
       }
     }
@@ -553,11 +567,15 @@ int main(int argc, char **argv)
       // the full path get stored in config.output variable
       config.output = open_log_file(&fp);
       printf("logging to %s\n", config.output);
+      syslog (LOG_NOTICE, "logging to %s\n", config.output);
     }
 
     if (mems_init_link(&info, response_buffer))
     {
       printf("ECU responded to D0 command with: %02X %02X %02X %02X\n\n",
+             response_buffer[0], response_buffer[1], response_buffer[2], response_buffer[3]);
+
+      syslog (LOG_NOTICE, "ECU responded to D0 command with: %02X %02X %02X %02X\n\n",
              response_buffer[0], response_buffer[1], response_buffer[2], response_buffer[3]);
 
       switch (cmd_idx)
@@ -574,12 +592,12 @@ int main(int argc, char **argv)
             //convert_dataframe_to_string(raw7d, &data.raw7d, 32);
 
             sprintf(log_line, "%s,"\
-                              "%u,%u,%u,%u,%u,%f,%f,%f,%u,%u,"\
-                              "%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,"\
-                              "%u,%u,%u,"\
-                              "%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,"\
-                              "%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,"\
-                              "%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,%u,"\
+                              "%d,%d,%d,%d,%d,%f,%f,%f,%d,%d,"\
+                              "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,"\
+                              "%d,%d,%d,"\
+                              "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,"\
+                              "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,"\
+                              "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,"\
                               "80%s,7d%s\n",
                               simple_current_time(),
                               data.engine_rpm,
@@ -640,6 +658,7 @@ int main(int argc, char **argv)
                               data.raw80
                               );
             printf("%s", log_line);
+            syslog (LOG_NOTICE, "%s", log_line);
 
             // write to log file if enabled
             if (fp) write_log(&fp, log_line);
@@ -689,6 +708,7 @@ int main(int argc, char **argv)
         if (mems_read_iac_position(&info, &readval))
         {
           printf("0x%02X\n", readval);
+          syslog (LOG_NOTICE,"IAC position : 0x%02X", readval);
           success = true;
         }
         break;
@@ -756,12 +776,14 @@ int main(int argc, char **argv)
 
       default:
         printf("Error: invalid command\n");
+        syslog (LOG_ERR,"invalid command.");
         break;
       }
     }
     else
     {
       printf("Error in initialization sequence.\n");
+      syslog (LOG_ERR,"Error in initialization sequence.");
     }
     mems_disconnect(&info);
   }
@@ -771,6 +793,7 @@ int main(int argc, char **argv)
     printf("Error: could not open serial device (%s).\n", win32devicename);
 #else
     printf("Error: could not open serial device (%s).\n", argv[1]);
+    syslog (LOG_ERR, "Error: could not open serial device (%s).\n", argv[1]);
 #endif
   }
 
@@ -781,11 +804,14 @@ int main(int argc, char **argv)
       // delete empty log files
       if (get_file_size(fp) < 1000) {
         printf("Output file too small, removing.\n");
+        syslog (LOG_NOTICE, "Output file too small, removing.");
         delete_file(config.output);
       }
 
       fclose(fp);
   }
+
+  closelog();
 
   return success ? 0 : -2;
 }
