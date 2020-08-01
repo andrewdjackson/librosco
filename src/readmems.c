@@ -651,8 +651,8 @@ int main(int argc, char **argv)
             // 240Kb will record in 20 minute chunks
             config.output = split_log_file(&fp, 240000);
 
-            // force a sleep of 950ms to get 1 readings per second 
-            sleep_ms(950);
+            // force a sleep of 450ms to get 2 readings per second 
+            sleep_ms(450);
 
             success = true;
           }
