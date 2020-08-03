@@ -17,7 +17,7 @@
 #endif
 
 #if defined(__arm__)
-#include "/home/pi/development/WiringPi/wiringPi/wiringPi.h"
+#include <wiringPi.h>
 
 static unsigned int o_gpiopin = 0;
 
