@@ -315,6 +315,7 @@ extern "C"
 
   librosco_version mems_get_lib_version();
 
+  void sleep_ms(int milliseconds);
   void led_setup();
   void led(int on);
   void led_flash(int count, int duration);
