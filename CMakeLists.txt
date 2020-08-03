@@ -83,7 +83,6 @@ include_directories (
   "${CMAKE_SOURCE_DIR}"
   "${CMAKE_BINARY_DIR}"
   "${CMAKE_SOURCE_DIR}/src"
-  "/usr/local/include"
   )
 
 if (BUILD_STATIC STREQUAL "ON")
@@ -115,8 +114,8 @@ if (CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "armv6l")
 
   # Include headers
   message (STATUS, "Adding wiringPi library ${WIRINGPI_LIBRARIES}")
-  include_directories("/usr/local/include")
-  add_definitions(-std=c++0x -L${WIRINGPI_LIBRARIES} -lwiringPi -lpthread)
+  include_directories("/home/pi/development/WiringPi/wiringP")
+  add_definitions(-L${WIRINGPI_LIBRARIES} -lwiringPi -lpthread)
 endif()
 
 if (MINGW)
