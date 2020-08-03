@@ -32,51 +32,50 @@ enum command_idx
   MC_Num_Commands = 11
 };
 
-static const char* commands[] = { 
-  "read",
-  "read-raw",
-  "read-iac",
-  "ptc",
-  "fuelpump",
-  "iac-close",
-  "iac-open",
-  "ac",
-  "coil",
-  "injectors",
-  "interactive"
-};
+static const char *commands[] = {
+    "read",
+    "read-raw",
+    "read-iac",
+    "ptc",
+    "fuelpump",
+    "iac-close",
+    "iac-open",
+    "ac",
+    "coil",
+    "injectors",
+    "interactive"};
 
 char *simple_current_time(void)
 {
-    time_t t = time(NULL);
-    struct tm tm = *localtime(&t);
-    struct timeval tv;
-    static char buffer[50];
+  time_t t = time(NULL);
+  struct tm tm = *localtime(&t);
+  struct timeval tv;
+  static char buffer[50];
 
-    gettimeofday(&tv, NULL);
+  gettimeofday(&tv, NULL);
 
-    sprintf(buffer, "%02d:%02d:%02d.000", tm.tm_hour, tm.tm_min, tm.tm_sec);
-    return buffer;
+  sprintf(buffer, "%02d:%02d:%02d.000", tm.tm_hour, tm.tm_min, tm.tm_sec);
+  return buffer;
 }
 
 bool prefix(const char pre, const char *str)
 {
-    return (str[0] == pre);
+  return (str[0] == pre);
 }
 
 int find_command(char *command)
 {
-    int cmd_idx = 0;
+  int cmd_idx = 0;
 
-    while ((cmd_idx < MC_Num_Commands) && (strcasecmp(command, commands[cmd_idx]) != 0))
-    {
-        cmd_idx += 1;
-    }
+  while ((cmd_idx < MC_Num_Commands) && (strcasecmp(command, commands[cmd_idx]) != 0))
+  {
+    cmd_idx += 1;
+  }
 
-    return cmd_idx;
+  return cmd_idx;
 }
 
-int read_config(readmems_config *config, char* path)
+int read_config(readmems_config *config, char *path)
 {
   FILE *file;
   char line[200];
@@ -160,52 +159,55 @@ int read_config(readmems_config *config, char* path)
 
 char *current_date(void)
 {
-    time_t t = time(NULL);
-    struct tm tm = *localtime(&t);
-    static char buffer[50];
+  time_t t = time(NULL);
+  struct tm tm = *localtime(&t);
+  static char buffer[50];
 
-    sprintf(buffer, "%4d-%02d-%02d-%02d%02d%02d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
-    return buffer;
+  sprintf(buffer, "%4d-%02d-%02d-%02d%02d%02d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
+  return buffer;
 }
 
 void sleep_ms(int milliseconds) // cross-platform sleep function
 {
 #ifdef WIN32
-    Sleep(milliseconds);
+  Sleep(milliseconds);
 #elif _POSIX_C_SOURCE >= 199309L
-    struct timespec ts;
-    ts.tv_sec = milliseconds / 1000;
-    ts.tv_nsec = (milliseconds % 1000) * 1000000;
-    nanosleep(&ts, NULL);
+  struct timespec ts;
+  ts.tv_sec = milliseconds / 1000;
+  ts.tv_nsec = (milliseconds % 1000) * 1000000;
+  nanosleep(&ts, NULL);
 #else
-    usleep(milliseconds * 1000);
+  usleep(milliseconds * 1000);
 #endif
 }
 
 char *open_log_file(FILE **fp)
 {
-    static char filename[200];
+  static char filename[200];
 
-    sprintf(filename, "readmems-%s.csv", current_date());
+  sprintf(filename, "readmems-%s.csv", current_date());
 
-    // open the file for writing
-    *fp = fopen(filename, "w");
+  // open the file for writing
+  *fp = fopen(filename, "w");
 
-    return filename;
+  return filename;
 }
 
 char *split_log_file(FILE **fp, int size)
 {
   char *filename;
 
-  if (*fp) {
+  if (*fp)
+  {
     // min size 10000Kb
-    if (size < 10000) {
+    if (size < 10000)
+    {
       size = 10000;
     }
 
     // close existing file and open a new file
-    if (get_file_size(*fp) > size) {
+    if (get_file_size(*fp) > size)
+    {
       fclose(*fp);
       filename = open_log_file(fp);
       write_memsscan_header(*fp);
@@ -213,57 +215,62 @@ char *split_log_file(FILE **fp, int size)
       printf("split log file, new file created %s\n\n", filename);
       syslog(LOG_NOTICE, "split log file, new file created %s\n\n", filename);
     }
-  }    
-  
+  }
+
   // return NULL if no new file
   return NULL;
 }
 
 int write_log(FILE **fp, char *line)
 {
-    if (*fp)
-        return fprintf(*fp, "%s", line);
-    else
-        return -1;
+  if (*fp)
+    return fprintf(*fp, "%s", line);
+  else
+    return -1;
 }
 
-int get_file_size(FILE *fp) {
-  if (fp) {   
-      fseek(fp, 0L, SEEK_END);
-      
-      return ftell(fp);
-  } else {
+int get_file_size(FILE *fp)
+{
+  if (fp)
+  {
+    fseek(fp, 0L, SEEK_END);
+
+    return ftell(fp);
+  }
+  else
+  {
     return -1;
   }
 }
 
-char *write_memsscan_header(FILE *fp) 
+char *write_memsscan_header(FILE *fp)
 {
-    static char header[1024];
+  static char header[1024];
 
-    // create header 
-    sprintf(header, "#time,"\
-                      "80x01-02_engine-rpm,80x03_coolant_temp,80x04_ambient_temp,80x05_intake_air_temp,80x06_fuel_temp,80x07_map_kpa,80x08_battery_voltage,80x09_throttle_pot,80x0A_idle_switch,80x0B_uk1,"\
-                      "80x0C_park_neutral_switch,80x0D-0E_fault_codes,80x0F_idle_set_point,80x10_idle_hot,80x11_uk2,80x12_iac_position,80x13-14_idle_error,80x15_ignition_advance_offset,80x16_ignition_advance,80x17-18_coil_time,"\
-                      "80x19_crankshaft_position_sensor,80x1A_uk4,80x1B_uk5,"\
-                      "7dx01_ignition_switch,7dx02_throttle_angle,7dx03_uk6,7dx04_air_fuel_ratio,7dx05_dtc2,7dx06_lambda_voltage,7dx07_lambda_sensor_frequency,7dx08_lambda_sensor_dutycycle,7dx09_lambda_sensor_status,7dx0A_closed_loop,"\
-                      "7dx0B_long_term_fuel_trim,7dx0C_short_term_fuel_trim,7dx0D_carbon_canister_dutycycle,7dx0E_dtc3,7dx0F_idle_base_pos,7dx10_uk7,7dx11_dtc4,7dx12_ignition_advance2,7dx13_idle_speed_offset,7dx14_idle_error2,"\
-                      "7dx14-15_uk10,7dx16_dtc5,7dx17_uk11,7dx18_uk12,7dx19_uk13,7dx1A_uk14,7dx1B_uk15,7dx1C_uk16,7dx1D_uk17,7dx1E_uk18,7dx1F_uk19,0x7d_raw,0x80_raw\n");
-    
-    printf("%s", header);
+  // create header
+  sprintf(header, "#time,"
+                  "80x01-02_engine-rpm,80x03_coolant_temp,80x04_ambient_temp,80x05_intake_air_temp,80x06_fuel_temp,80x07_map_kpa,80x08_battery_voltage,80x09_throttle_pot,80x0A_idle_switch,80x0B_uk1,"
+                  "80x0C_park_neutral_switch,80x0D-0E_fault_codes,80x0F_idle_set_point,80x10_idle_hot,80x11_uk2,80x12_iac_position,80x13-14_idle_error,80x15_ignition_advance_offset,80x16_ignition_advance,80x17-18_coil_time,"
+                  "80x19_crankshaft_position_sensor,80x1A_uk4,80x1B_uk5,"
+                  "7dx01_ignition_switch,7dx02_throttle_angle,7dx03_uk6,7dx04_air_fuel_ratio,7dx05_dtc2,7dx06_lambda_voltage,7dx07_lambda_sensor_frequency,7dx08_lambda_sensor_dutycycle,7dx09_lambda_sensor_status,7dx0A_closed_loop,"
+                  "7dx0B_long_term_fuel_trim,7dx0C_short_term_fuel_trim,7dx0D_carbon_canister_dutycycle,7dx0E_dtc3,7dx0F_idle_base_pos,7dx10_uk7,7dx11_dtc4,7dx12_ignition_advance2,7dx13_idle_speed_offset,7dx14_idle_error2,"
+                  "7dx14-15_uk10,7dx16_dtc5,7dx17_uk11,7dx18_uk12,7dx19_uk13,7dx1A_uk14,7dx1B_uk15,7dx1C_uk16,7dx1D_uk17,7dx1E_uk18,7dx1F_uk19,0x7d_raw,0x80_raw\n");
 
-    // write to log file if enabled
-    if (fp) write_log(&fp, header);
+  printf("%s", header);
 
-    return header;
+  // write to log file if enabled
+  if (fp)
+    write_log(&fp, header);
+
+  return header;
 }
 
 void delete_file(char *filename)
 {
-    remove(filename);
+  remove(filename);
 }
 
-void printbuf(uint8_t* buf, unsigned int count)
+void printbuf(uint8_t *buf, unsigned int count)
 {
   unsigned int idx = 0;
 
@@ -279,15 +286,14 @@ void printbuf(uint8_t* buf, unsigned int count)
   printf("\n");
 }
 
-
-int16_t readserial(mems_info* info, uint8_t* buffer, uint16_t quantity)
+int16_t readserial(mems_info *info, uint8_t *buffer, uint16_t quantity)
 {
   int16_t bytesread = -1;
 
-#if defined (WIN32)
+#if defined(WIN32)
   DWORD w32BytesRead = 0;
 
-  if ((ReadFile(info->sd, (UCHAR *) buffer, quantity, &w32BytesRead, NULL) == TRUE) && (w32BytesRead > 0))
+  if ((ReadFile(info->sd, (UCHAR *)buffer, quantity, &w32BytesRead, NULL) == TRUE) && (w32BytesRead > 0))
   {
     bytesread = w32BytesRead;
   }
@@ -298,15 +304,14 @@ int16_t readserial(mems_info* info, uint8_t* buffer, uint16_t quantity)
   return bytesread;
 }
 
-
-int16_t writeserial(mems_info* info, uint8_t* buffer, uint16_t quantity)
+int16_t writeserial(mems_info *info, uint8_t *buffer, uint16_t quantity)
 {
   int16_t byteswritten = -1;
 
 #if defined(WIN32)
   DWORD w32BytesWritten = 0;
 
-  if ((WriteFile(info->sd, (UCHAR*) buffer, quantity, &w32BytesWritten, NULL) == TRUE) &&
+  if ((WriteFile(info->sd, (UCHAR *)buffer, quantity, &w32BytesWritten, NULL) == TRUE) &&
       (w32BytesWritten == quantity))
   {
     byteswritten = w32BytesWritten;
@@ -318,17 +323,16 @@ int16_t writeserial(mems_info* info, uint8_t* buffer, uint16_t quantity)
   return byteswritten;
 }
 
-
-bool interactive_mode(mems_info* info, uint8_t* response_buffer)
+bool interactive_mode(mems_info *info, uint8_t *response_buffer)
 {
   size_t icmd_size = 8;
-  char* icmd_buf_ptr;
+  char *icmd_buf_ptr;
   uint8_t icmd;
   ssize_t bytes_read = 0;
   ssize_t total_bytes_read = 0;
   bool quit = false;
 
-  if ((icmd_buf_ptr = (char*)malloc(icmd_size)) != NULL)
+  if ((icmd_buf_ptr = (char *)malloc(icmd_size)) != NULL)
   {
     printf("Enter a command (in hex) or 'quit'.\n> ");
     while (!quit && (fgets(icmd_buf_ptr, icmd_size, stdin) != NULL))
@@ -360,13 +364,13 @@ bool interactive_mode(mems_info* info, uint8_t* response_buffer)
             else
             {
               printf("No response from ECU.\n");
-              syslog (LOG_ERR, "No response from ECU.");
+              syslog(LOG_ERR, "No response from ECU.");
             }
           }
           else
           {
             printf("Error: failed to write command byte to serial port.\n");
-            syslog (LOG_ERR, "Error: failed to write command byte to serial port.");
+            syslog(LOG_ERR, "Error: failed to write command byte to serial port.");
           }
         }
         else
@@ -412,9 +416,13 @@ int main(int argc, char **argv)
   FILE *fp = NULL;
   char *config_file;
 
+#if defined __arm__
+  printf("running on ARM processor\n");
+#endif()
+
   // set up syslog
-  setlogmask (LOG_UPTO (LOG_NOTICE));
-  openlog ("readmems", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL1);
+  setlogmask(LOG_UPTO(LOG_NOTICE));
+  openlog("readmems", LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL1);
 
   // the ECU is already reporting that the valve has
   // reached its requested position
@@ -433,10 +441,11 @@ int main(int argc, char **argv)
   config_file = strdup("readmems.cfg");
 
   // if only 1 argument then expect the config file path
-  if (argc == 2) {
+  if (argc == 2)
+  {
     config_file = argv[1];
   }
-  
+
   cmd_idx = read_config(&config, config_file);
 
   // if the config is invalid or any parameters have been specified on the command line
@@ -489,7 +498,7 @@ int main(int argc, char **argv)
   else
   {
     printf("Using config:\nport: %s\ncommand: %s (%d)\noutput: %s\nloop: %s\n", config.port, config.command, cmd_idx, config.output, config.loop);
-    syslog (LOG_NOTICE, "Using config {port: %s, command: %s (%d), output: %s, loop: %s}", config.port, config.command, cmd_idx, config.output, config.loop);
+    syslog(LOG_NOTICE, "Using config {port: %s, command: %s (%d), output: %s, loop: %s}", config.port, config.command, cmd_idx, config.output, config.loop);
 
     // set how many times to loop the command
     // 'inf' for infinite
@@ -507,7 +516,7 @@ int main(int argc, char **argv)
     // the ECU is powered on
     if (strcmp(config.connection, "wait") == 0)
     {
-        wait_for_connection= true;
+      wait_for_connection = true;
     }
 
     // automatically save output to file rather than having to pipe stdio
@@ -523,7 +532,7 @@ int main(int argc, char **argv)
   if (cmd_idx != MC_Interactive)
   {
     printf("Running command: %s\n", commands[cmd_idx]);
-    syslog (LOG_NOTICE, "Running command: %s", commands[cmd_idx]);
+    syslog(LOG_NOTICE, "Running command: %s", commands[cmd_idx]);
   }
 
   mems_init(&info);
@@ -540,7 +549,7 @@ int main(int argc, char **argv)
   do
   {
     printf("attempting to connect to %s\n", port);
-    syslog (LOG_NOTICE, "attempting to connect to %s", port);
+    syslog(LOG_NOTICE, "attempting to connect to %s", port);
     connected = mems_connect(&info, port);
 
     if (!connected)
@@ -549,7 +558,7 @@ int main(int argc, char **argv)
       if (wait_for_connection)
       {
         printf("waiting to retry connection to %s\n", port);
-        syslog (LOG_NOTICE,"waiting to retry connection to %s", port);
+        syslog(LOG_NOTICE, "waiting to retry connection to %s", port);
         sleep(2);
       }
     }
@@ -562,12 +571,13 @@ int main(int argc, char **argv)
 
   if (connected)
   {
-    if (log_to_file) {
+    if (log_to_file)
+    {
       // open the log file if logging enabled
       // the full path get stored in config.output variable
       config.output = open_log_file(&fp);
       printf("logging to %s\n", config.output);
-      syslog (LOG_NOTICE, "logging to %s\n", config.output);
+      syslog(LOG_NOTICE, "logging to %s\n", config.output);
     }
 
     if (mems_init_link(&info, response_buffer))
@@ -575,13 +585,13 @@ int main(int argc, char **argv)
       printf("ECU responded to D0 command with: %02X %02X %02X %02X\n\n",
              response_buffer[0], response_buffer[1], response_buffer[2], response_buffer[3]);
 
-      syslog (LOG_NOTICE, "ECU responded to D0 command with: %02X %02X %02X %02X\n\n",
+      syslog(LOG_NOTICE, "ECU responded to D0 command with: %02X %02X %02X %02X\n\n",
              response_buffer[0], response_buffer[1], response_buffer[2], response_buffer[3]);
 
       switch (cmd_idx)
       {
       case MC_Read:
-        // create header 
+        // create header
         write_memsscan_header(fp);
 
         while (read_inf || (read_loop_count-- > 0))
@@ -591,86 +601,86 @@ int main(int argc, char **argv)
             //convert_dataframe_to_string(raw80, &data.raw80, 28);
             //convert_dataframe_to_string(raw7d, &data.raw7d, 32);
 
-            sprintf(log_line, "%s,"\
-                              "%d,%d,%d,%d,%d,%f,%f,%f,%d,%d,"\
-                              "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,"\
-                              "%d,%d,%d,"\
-                              "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,"\
-                              "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,"\
-                              "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,"\
+            sprintf(log_line, "%s,"
+                              "%d,%d,%d,%d,%d,%f,%f,%f,%d,%d,"
+                              "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,"
+                              "%d,%d,%d,"
+                              "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,"
+                              "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,"
+                              "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,"
                               "80%s,7d%s\n",
-                              simple_current_time(),
-                              data.engine_rpm,
-                              data.coolant_temp_c,
-                              data.ambient_temp_c,
-                              data.intake_air_temp_c,
-                              data.fuel_temp_c,
-                              data.map_kpa,
-                              data.battery_voltage,
-                              data.throttle_pot_voltage,
-                              data.idle_switch,
-                              data.uk1,
-                              data.park_neutral_switch,
-                              data.fault_codes,
-                              data.idle_set_point,
-                              data.idle_hot,
-                              data.uk2,
-                              data.iac_position,
-                              data.idle_error,
-                              data.ignition_advance_offset,
-                              data.ignition_advance,
-                              data.coil_time,
-                              data.crankshaft_position_sensor,
-                              data.uk4,
-                              data.uk5,
-                              data.ignition_switch,
-                              data.throttle_angle,
-                              data.uk6,
-                              data.air_fuel_ratio,
-                              data.dtc2,
-                              data.lambda_voltage_mv,
-                              data.lambda_sensor_frequency,
-                              data.lambda_sensor_dutycycle,
-                              data.lambda_sensor_status,
-                              data.closed_loop,
-                              data.long_term_fuel_trim,
-                              data.short_term_fuel_trim,
-                              data.carbon_canister_dutycycle,
-                              data.dtc3,
-                              data.idle_base_pos,
-                              data.uk7,
-                              data.dtc4,
-                              data.ignition_advance2,
-                              data.idle_speed_offset,
-                              data.idle_error2,
-                              (((uint16_t)data.idle_error2 << 8 ) | data.uk10),
-                              data.dtc5,
-                              data.uk11,
-                              data.uk12,
-                              data.uk13,
-                              data.uk14,
-                              data.uk15,
-                              data.uk16,
-                              data.uk1A,
-                              data.uk1B,
-                              data.uk1C,
-                              data.raw7d,
-                              data.raw80
-                              );
+                    simple_current_time(),
+                    data.engine_rpm,
+                    data.coolant_temp_c,
+                    data.ambient_temp_c,
+                    data.intake_air_temp_c,
+                    data.fuel_temp_c,
+                    data.map_kpa,
+                    data.battery_voltage,
+                    data.throttle_pot_voltage,
+                    data.idle_switch,
+                    data.uk1,
+                    data.park_neutral_switch,
+                    data.fault_codes,
+                    data.idle_set_point,
+                    data.idle_hot,
+                    data.uk2,
+                    data.iac_position,
+                    data.idle_error,
+                    data.ignition_advance_offset,
+                    data.ignition_advance,
+                    data.coil_time,
+                    data.crankshaft_position_sensor,
+                    data.uk4,
+                    data.uk5,
+                    data.ignition_switch,
+                    data.throttle_angle,
+                    data.uk6,
+                    data.air_fuel_ratio,
+                    data.dtc2,
+                    data.lambda_voltage_mv,
+                    data.lambda_sensor_frequency,
+                    data.lambda_sensor_dutycycle,
+                    data.lambda_sensor_status,
+                    data.closed_loop,
+                    data.long_term_fuel_trim,
+                    data.short_term_fuel_trim,
+                    data.carbon_canister_dutycycle,
+                    data.dtc3,
+                    data.idle_base_pos,
+                    data.uk7,
+                    data.dtc4,
+                    data.ignition_advance2,
+                    data.idle_speed_offset,
+                    data.idle_error2,
+                    (((uint16_t)data.idle_error2 << 8) | data.uk10),
+                    data.dtc5,
+                    data.uk11,
+                    data.uk12,
+                    data.uk13,
+                    data.uk14,
+                    data.uk15,
+                    data.uk16,
+                    data.uk1A,
+                    data.uk1B,
+                    data.uk1C,
+                    data.raw7d,
+                    data.raw80);
             printf("%s", log_line);
-            syslog (LOG_NOTICE, "%s", log_line);
+            syslog(LOG_NOTICE, "%s", log_line);
 
             // write to log file if enabled
-            if (fp) write_log(&fp, log_line);
-            
+            if (fp)
+              write_log(&fp, log_line);
+
             // determine whether we need to split the output into manageable files
-            // specify max size in Mb 
+            // specify max size in Mb
             //
             // reading from MEMS at ~1 readings per second
             // 240Kb will record in 20 minute chunks
             config.output = split_log_file(&fp, 240000);
 
-            // force a sleep of 450ms to get 2 readings per second 
+            // force a sleep of 450ms to get 2 readings per second
             sleep_ms(450);
 
             success = true;
@@ -683,7 +693,7 @@ int main(int argc, char **argv)
         {
           if (mems_read_raw(&info, &frame80, &frame7d))
           {
-            frameptr = (uint8_t*)&frame80;
+            frameptr = (uint8_t *)&frame80;
             printf("80: ");
             for (bufidx = 0; bufidx < sizeof(mems_data_frame_80); ++bufidx)
             {
@@ -691,7 +701,7 @@ int main(int argc, char **argv)
             }
             printf("\n");
 
-            frameptr = (uint8_t*)&frame7d;
+            frameptr = (uint8_t *)&frame7d;
             printf("7D: ");
             for (bufidx = 0; bufidx < sizeof(mems_data_frame_7d); ++bufidx)
             {
@@ -708,7 +718,7 @@ int main(int argc, char **argv)
         if (mems_read_iac_position(&info, &readval))
         {
           printf("0x%02X\n", readval);
-          syslog (LOG_NOTICE,"IAC position : 0x%02X", readval);
+          syslog(LOG_NOTICE, "IAC position : 0x%02X", readval);
           success = true;
         }
         break;
@@ -776,14 +786,14 @@ int main(int argc, char **argv)
 
       default:
         printf("Error: invalid command\n");
-        syslog (LOG_ERR,"invalid command.");
+        syslog(LOG_ERR, "invalid command.");
         break;
       }
     }
     else
     {
       printf("Error in initialization sequence.\n");
-      syslog (LOG_ERR,"Error in initialization sequence.");
+      syslog(LOG_ERR, "Error in initialization sequence.");
     }
     mems_disconnect(&info);
   }
@@ -793,22 +803,24 @@ int main(int argc, char **argv)
     printf("Error: could not open serial device (%s).\n", win32devicename);
 #else
     printf("Error: could not open serial device (%s).\n", argv[1]);
-    syslog (LOG_ERR, "Error: could not open serial device (%s).\n", argv[1]);
+    syslog(LOG_ERR, "Error: could not open serial device (%s).\n", argv[1]);
 #endif
   }
 
   mems_cleanup(&info);
 
   // close any open files
-  if (fp) {   
-      // delete empty log files
-      if (get_file_size(fp) < 1000) {
-        printf("Output file too small, removing.\n");
-        syslog (LOG_NOTICE, "Output file too small, removing.");
-        delete_file(config.output);
-      }
+  if (fp)
+  {
+    // delete empty log files
+    if (get_file_size(fp) < 1000)
+    {
+      printf("Output file too small, removing.\n");
+      syslog(LOG_NOTICE, "Output file too small, removing.");
+      delete_file(config.output);
+    }
 
-      fclose(fp);
+    fclose(fp);
   }
 
   closelog();
