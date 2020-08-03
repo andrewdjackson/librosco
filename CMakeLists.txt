@@ -222,7 +222,7 @@ else()
         VERSION   ${LIBROSCO_VERSION}
   )
 
-  target_link_libraries (readmems rosco pthread)
+  target_link_libraries (readmems rosco pthread ${WIRINGPI_LIBRARIES})
 
   # set the installation destinations for the header files,
   # shared library binaries, and reference utility
