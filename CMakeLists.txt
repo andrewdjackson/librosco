@@ -5,7 +5,7 @@ set(PROJECT_NAME "librosco")
 set(PROJECT_DESCRIPTION "Library supporting serial communication with the Rover MEMS 1.6 engine control module via the ROSCO protocol")
 set(PROJECT_AUTHOR "Forked by Andrew Jackson from Colin Bourassa <colin.bourassa@gmail.com>")
 set(PROJECT_URL "https://github.com/andrewdjackson/librosco")
-set (CMAKE_BUILD_TYPE Debug)
+# set (CMAKE_BUILD_TYPE Debug)
 
 # for Darwin support
 if(POLICY CMP0042)
