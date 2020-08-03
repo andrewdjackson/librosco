@@ -18,12 +18,14 @@
 
 #if defined(__arm__)
 #include <wiringPi.h>
+#endif
 
 static unsigned int o_gpiopin = 0;
 
 /* Update the LED */
 void led(int on)
 {
+#if defined(__arm__)
   static int current = 1; /* Ensure the LED turns off on first call */
   if (current == on)
     return;
@@ -38,17 +40,20 @@ void led(int on)
   }
 
   current = on;
+#endif
 }
 
 /* LED setup */
 void led_setup()
 {
+#if defined(__arm__)
   wiringPiSetup();
   pinMode(o_gpiopin, OUTPUT);
   /* Ensure the LED is off */
   led(LOW);
-}
+  printf("LED connection signalling established.\n");
 #endif
+}
 
 enum command_idx
 {
@@ -450,9 +455,8 @@ int main(int argc, char **argv)
   FILE *fp = NULL;
   char *config_file;
 
-#if defined(__arm__)
+  // raspberry pi LED signalling on GPIO
   led_setup();
-#endif
 
   // set up syslog
   setlogmask(LOG_UPTO(LOG_NOTICE));
@@ -582,12 +586,16 @@ int main(int argc, char **argv)
 
   do
   {
+    led(1);
+
     printf("attempting to connect to %s\n", port);
     syslog(LOG_NOTICE, "attempting to connect to %s", port);
     connected = mems_connect(&info, port);
 
     if (!connected)
     {
+      led(0);
+
       // not connected, so pause and retry
       if (wait_for_connection)
       {
@@ -605,6 +613,14 @@ int main(int argc, char **argv)
 
   if (connected)
   {
+    led(0);
+    led(1);
+    led(0);
+    led(1);
+    led(0);
+    led(1);
+    led(0);
+
     if (log_to_file)
     {
       // open the log file if logging enabled
@@ -725,9 +741,8 @@ int main(int argc, char **argv)
       case MC_Read_Raw:
         while (read_inf || (read_loop_count-- > 0))
         {
-#if defined(__arm__)
-          led(HIGH);
-#endif
+          led(1);
+
           if (mems_read_raw(&info, &frame80, &frame7d))
           {
             frameptr = (uint8_t *)&frame80;
@@ -748,9 +763,8 @@ int main(int argc, char **argv)
 
             success = true;
           }
-#if defined(__arm__)
-          led(LOW);
-#endif
+
+          led(0);
         }
         break;
 
@@ -865,9 +879,7 @@ int main(int argc, char **argv)
 
   closelog();
 
-#if defined(__arm__)
-  led(LOW);
-#endif
+  led(0);
 
   return success
              ? 0

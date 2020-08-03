@@ -315,10 +315,8 @@ extern "C"
 
   librosco_version mems_get_lib_version();
 
-#if defined(__arm__)
   void led_setup();
   void led(int on);
-#endif
 
 /* Closing brace for 'extern "C"' */
 #ifdef __cplusplus
