@@ -108,8 +108,10 @@ add_executable (readmems ${SOURCE_SUBDIR}/readmems.c)
 set (BINDIR "${CMAKE_BINARY_DIR}/${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 
 # detect if Raspberry Pi
-message (STATUS, "RPI? ${CMAKE_HOST_SYSTEM_PROCESSOR}") 
-add_definitions(-std=c++0x -L/path/to/libwringPi.???.(so|a) -lwiringPi -lpthread)
+if (CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "armv6l")
+  message (STATUS, "Adding wiringPi library ${CMAKE_HOST_SYSTEM_PROCESSOR}") 
+  add_definitions(-std=c++0x -L/path/to/libwringPi.???.(so|a) -lwiringPi -lpthread)
+endif()
 
 if (MINGW)
   message (STATUS "Found MinGW platform.")
