@@ -616,7 +616,7 @@ int main(int argc, char **argv)
       {
         printf("waiting to retry connection to %s\n", port);
         syslog(LOG_NOTICE, "waiting to retry connection to %s", port);
-        sleep(2);
+        sleep_ms(2000);
       }
     }
     else
