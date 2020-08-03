@@ -114,6 +114,9 @@ if (CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "armv6l")
 
   # Link against wiringPi
   find_library(WIRINGPI_LIBRARIES NAMES wiringPi)
+  find_path(WIRINGPI_INCLUDE_DIRS NAMES wiringPi.h)
+  # Include headers
+  include_directories(${WIRINGPI_INCLUDE_DIRS})
   target_link_libraries(${WIRINGPI_LIBRARIES})
 endif()
 
