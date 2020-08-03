@@ -601,10 +601,12 @@ int main(int argc, char **argv)
   port = config.port;
 #endif
 
+  syslog(LOG_NOTICE, "attempting to connect to %s..", port);
+
   do
   {
     printf("attempting to connect to %s\n", port);
-    syslog(LOG_NOTICE, "attempting to connect to %s", port);
+    //syslog(LOG_NOTICE, "attempting to connect to %s", port);
     connected = mems_connect(&info, port);
 
     if (!connected)
