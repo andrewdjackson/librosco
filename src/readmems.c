@@ -17,7 +17,7 @@
 #endif
 
 #if defined(__arm__)
-#include <wiringPi.h>
+#include "/home/pi/development/WiringPi/wiringPi/wiringPi.h"
 
 static unsigned int o_gpiopin = 0;
 
@@ -728,7 +728,7 @@ int main(int argc, char **argv)
 #if defined(__arm__)
           led(HIGH);
 #endif
-              if (mems_read_raw(&info, &frame80, &frame7d))
+          if (mems_read_raw(&info, &frame80, &frame7d))
           {
             frameptr = (uint8_t *)&frame80;
             printf("80: ");
@@ -869,7 +869,7 @@ int main(int argc, char **argv)
   led(LOW);
 #endif
 
-          return success
-      ? 0
-      : -2;
+  return success
+             ? 0
+             : -2;
 }
