@@ -55,6 +55,19 @@ void led_setup()
 #endif
 }
 
+void led_flash(int count)
+{
+#if defined(__arm__)
+  led(0);
+
+  for (i = 0; i < count; i++)
+  {
+    led(1);
+    led(0);
+  }
+#endif
+}
+
 enum command_idx
 {
   MC_Read = 0,
@@ -613,13 +626,8 @@ int main(int argc, char **argv)
 
   if (connected)
   {
-    led(0);
-    led(1);
-    led(0);
-    led(1);
-    led(0);
-    led(1);
-    led(0);
+    // flash LED 3 times on connect
+    led_flash(3);
 
     if (log_to_file)
     {
@@ -637,6 +645,9 @@ int main(int argc, char **argv)
 
       syslog(LOG_NOTICE, "ECU responded to D0 command with: %02X %02X %02X %02X\n\n",
              response_buffer[0], response_buffer[1], response_buffer[2], response_buffer[3]);
+
+      // flash LED 5 times on intialisation
+      led_flash(5);
 
       switch (cmd_idx)
       {
