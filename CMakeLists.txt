@@ -110,7 +110,7 @@ set (BINDIR "${CMAKE_BINARY_DIR}/${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 # detect if Raspberry Pi
 include(CheckIncludeFile)
 CHECK_INCLUDE_FILE(/opt/vc/include/bcm_host.h, BCMHOST)
-
+message (STATUS, "RPI? ${BCMHOST}")
 if (BCMHOST)
   message(STATUS, "Compiling for Raspberry Pi")
 endif()
