@@ -109,15 +109,14 @@ set (BINDIR "${CMAKE_BINARY_DIR}/${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 
 # detect if Raspberry Pi
 if (CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "armv6l")
-  message (STATUS, "Adding wiringPi library ${CMAKE_HOST_SYSTEM_PROCESSOR}") 
-  #add_definitions(-std=c++0x -L/path/to/libwringPi.???.(so|a) -lwiringPi -lpthread)
-
   # Link against wiringPi
   find_library(WIRINGPI_LIBRARIES NAMES wiringPi)
   find_path(WIRINGPI_INCLUDE_DIRS NAMES wiringPi.h)
   # Include headers
+  message (STATUS, "Adding wiringPi library ${WIRINGPI_INCLUDE_DIRS}, ${WIRINGPI_LIBRARIES}")
   include_directories(${WIRINGPI_INCLUDE_DIRS})
   target_link_libraries(${WIRINGPI_LIBRARIES})
+  add_definitions(-std=c++0x -L${WIRINGPI_LIBRARIES} -lwiringPi -lpthread)
 endif()
 
 if (MINGW)
