@@ -114,7 +114,7 @@ if (CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "armv6l")
 
   # Link against wiringPi
   find_library(WIRINGPI_LIBRARIES NAMES wiringPi)
-  target_link_libraries(OpenInsulin ${WIRINGPI_LIBRARIES})
+  target_link_libraries(${WIRINGPI_LIBRARIES})
 endif()
 
 if (MINGW)
@@ -136,7 +136,11 @@ if (MINGW)
         VERSION ${LIBROSCO_VER_MAJOR}
   )
 
+if (CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "armv6l")
+  target_link_libraries (readmems rosco ${WIRINGPI_LIBRARIES})
+else()
   target_link_libraries (readmems rosco)
+endif()
 
   install (FILES "${SOURCE_SUBDIR}/rosco.h"
                  "${CMAKE_BINARY_DIR}/rosco_version.h"
