@@ -55,7 +55,7 @@ void led_setup()
 #endif
 }
 
-void led_flash(int count)
+void led_flash(int count, int duration)
 {
 #if defined(__arm__)
   int i;
@@ -65,7 +65,9 @@ void led_flash(int count)
   for (i = 0; i < count; i++)
   {
     led(1);
+    sleep_ms(duration);
     led(0);
+    sleep_ms(duration);
   }
 #endif
 }
@@ -609,14 +611,14 @@ int main(int argc, char **argv)
 
     if (!connected)
     {
-      led(0);
-
       // not connected, so pause and retry
       if (wait_for_connection)
       {
         printf("waiting to retry connection to %s\n", port);
         syslog(LOG_NOTICE, "waiting to retry connection to %s", port);
-        sleep_ms(2000);
+        sleep_ms(1000);
+        led(0);
+        sleep_ms(1000);
       }
     }
     else
@@ -629,7 +631,7 @@ int main(int argc, char **argv)
   if (connected)
   {
     // flash LED 3 times on connect
-    led_flash(3);
+    led_flash(3, 50);
 
     if (log_to_file)
     {
@@ -649,7 +651,7 @@ int main(int argc, char **argv)
              response_buffer[0], response_buffer[1], response_buffer[2], response_buffer[3]);
 
       // flash LED 5 times on intialisation
-      led_flash(5);
+      led_flash(5, 100);
 
       switch (cmd_idx)
       {
