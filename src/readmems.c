@@ -58,6 +58,8 @@ void led_setup()
 void led_flash(int count)
 {
 #if defined(__arm__)
+  int i;
+
   led(0);
 
   for (i = 0; i < count; i++)
