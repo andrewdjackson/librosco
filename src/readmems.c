@@ -603,8 +603,6 @@ int main(int argc, char **argv)
 
   do
   {
-    led(1);
-
     printf("attempting to connect to %s\n", port);
     syslog(LOG_NOTICE, "attempting to connect to %s", port);
     connected = mems_connect(&info, port);
@@ -617,7 +615,7 @@ int main(int argc, char **argv)
         printf("waiting to retry connection to %s\n", port);
         syslog(LOG_NOTICE, "waiting to retry connection to %s", port);
         sleep_ms(1000);
-        led(0);
+        led_flash(1, 500);
         sleep_ms(1000);
       }
     }
@@ -661,6 +659,8 @@ int main(int argc, char **argv)
 
         while (read_inf || (read_loop_count-- > 0))
         {
+          led(1);
+
           if (mems_read(&info, &data))
           {
             //convert_dataframe_to_string(raw80, &data.raw80, 28);
@@ -746,6 +746,7 @@ int main(int argc, char **argv)
             config.output = split_log_file(&fp, 240000);
 
             // force a sleep of 450ms to get 2 readings per second
+            led(0);
             sleep_ms(450);
 
             success = true;
