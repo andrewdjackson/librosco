@@ -108,12 +108,8 @@ add_executable (readmems ${SOURCE_SUBDIR}/readmems.c)
 set (BINDIR "${CMAKE_BINARY_DIR}/${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 
 # detect if Raspberry Pi
-include(CheckIncludeFile)
-CHECK_INCLUDE_FILE(/opt/vc/include/bcm_host.h, BCMHOST)
-message (STATUS, "RPI? ${BCMHOST}")
-if (BCMHOST)
-  message(STATUS, "Compiling for Raspberry Pi")
-endif()
+message (STATUS, "RPI? ${CMAKE_HOST_SYSTEM_PROCESSOR}") 
+add_definitions(-std=c++0x -L/path/to/libwringPi.???.(so|a) -lwiringPi -lpthread)
 
 if (MINGW)
   message (STATUS "Found MinGW platform.")
