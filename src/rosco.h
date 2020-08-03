@@ -30,6 +30,10 @@ extern "C" {
 
 #define IAC_MAXIMUM 0xB4
 
+#if defined RPI
+
+#endif
+
 /**
  * These general commands are used to request data and clear fault codes.
  */

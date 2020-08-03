@@ -107,6 +107,14 @@ add_executable (readmems ${SOURCE_SUBDIR}/readmems.c)
 
 set (BINDIR "${CMAKE_BINARY_DIR}/${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 
+# detect if Raspberry Pi
+include(CheckIncludeFile)
+CHECK_INCLUDE_FILE(/opt/vc/include/bcm_host.h, BCMHOST)
+
+if (BCMHOST)
+  message(STATUS, "Compiling for Raspberry Pi")
+endif()
+
 if (MINGW)
   message (STATUS "Found MinGW platform.")
 
