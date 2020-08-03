@@ -17,15 +17,7 @@
 #endif
 
 #if defined(__arm__)
-#pragma once
-#ifdef __cplusplus
-extern "C"
-{
-#endif
 #include <wiringPi.h>
-#ifdef __cplusplus
-}
-#endif
 
 static unsigned int o_gpiopin = 0;
 
