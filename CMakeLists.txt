@@ -111,16 +111,10 @@ set (BINDIR "${CMAKE_BINARY_DIR}/${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 if (CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "armv6l")
   message (STATUS, "Adding wiringPi library ${CMAKE_HOST_SYSTEM_PROCESSOR}") 
   #add_definitions(-std=c++0x -L/path/to/libwringPi.???.(so|a) -lwiringPi -lpthread)
-  # Locate libraries and headers
-  find_package(WiringPi REQUIRED)
-  find_package(Threads REQUIRED) 
 
-  # Include headers
-  include_directories(${WIRINGPI_INCLUDE_DIRS}) 
-
-  # Link against libraries
-  target_link_libraries(<yourProjectName> ${WIRINGPI_LIBRARIES}) 
-  target_link_libraries(<yourProjectName> ${CMAKE_THREAD_LIBS_INIT}) 
+  # Link against wiringPi
+  find_library(WIRINGPI_LIBRARIES NAMES wiringPi)
+  target_link_libraries(OpenInsulin ${WIRINGPI_LIBRARIES})
 endif()
 
 if (MINGW)
