@@ -16,6 +16,40 @@
 #include <windows.h>
 #endif
 
+#if defined(__arm__)
+#include <wiringPi.h>
+
+static unsigned int o_gpiopin = 0;
+
+/* LED setup */
+void led_setup()
+{
+  wiringPiSetup();
+  pinMode(o_gpiopin, OUTPUT);
+  /* Ensure the LED is off */
+  led(LOW);
+}
+
+/* Update the LED */
+void led(int on)
+{
+  static int current = 1; /* Ensure the LED turns off on first call */
+  if (current == on)
+    return;
+
+  if (on)
+  {
+    digitalWrite(o_gpiopin, HIGH);
+  }
+  else
+  {
+    digitalWrite(o_gpiopin, LOW);
+  }
+
+  current = on;
+}
+#endif
+
 enum command_idx
 {
   MC_Read = 0,
@@ -416,9 +450,9 @@ int main(int argc, char **argv)
   FILE *fp = NULL;
   char *config_file;
 
-#if defined __arm__
-  printf("running on ARM processor\n");
-#endif()
+#if defined(__arm__)
+  setup_led();
+#endif
 
   // set up syslog
   setlogmask(LOG_UPTO(LOG_NOTICE));
@@ -691,7 +725,10 @@ int main(int argc, char **argv)
       case MC_Read_Raw:
         while (read_inf || (read_loop_count-- > 0))
         {
-          if (mems_read_raw(&info, &frame80, &frame7d))
+#if defined(__arm__)
+          led(HIGH)
+#endif
+              if (mems_read_raw(&info, &frame80, &frame7d))
           {
             frameptr = (uint8_t *)&frame80;
             printf("80: ");
@@ -711,6 +748,9 @@ int main(int argc, char **argv)
 
             success = true;
           }
+#if defined(__arm__)
+          led(LOW)
+#endif
         }
         break;
 
@@ -825,5 +865,11 @@ int main(int argc, char **argv)
 
   closelog();
 
-  return success ? 0 : -2;
+#if defined(__arm__)
+  led(LOW)
+#endif
+
+          return success
+      ? 0
+      : -2;
 }
