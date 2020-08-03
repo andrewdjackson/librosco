@@ -613,7 +613,7 @@ int main(int argc, char **argv)
       if (wait_for_connection)
       {
         printf("waiting to retry connection to %s\n", port);
-        syslog(LOG_NOTICE, "waiting to retry connection to %s", port);
+        // syslog(LOG_NOTICE, "waiting to retry connection to %s", port);
         sleep_ms(1000);
         led_flash(1, 500);
         sleep_ms(1000);
@@ -628,6 +628,8 @@ int main(int argc, char **argv)
 
   if (connected)
   {
+    syslog(LOG_NOTICE, "connected to ECU");
+
     // flash LED 3 times on connect
     led_flash(3, 50);
 
