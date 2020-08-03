@@ -726,7 +726,7 @@ int main(int argc, char **argv)
         while (read_inf || (read_loop_count-- > 0))
         {
 #if defined(__arm__)
-          led(HIGH)
+          led(HIGH);
 #endif
               if (mems_read_raw(&info, &frame80, &frame7d))
           {
@@ -749,7 +749,7 @@ int main(int argc, char **argv)
             success = true;
           }
 #if defined(__arm__)
-          led(LOW)
+          led(LOW);
 #endif
         }
         break;
@@ -866,7 +866,7 @@ int main(int argc, char **argv)
   closelog();
 
 #if defined(__arm__)
-  led(LOW)
+  led(LOW);
 #endif
 
           return success
