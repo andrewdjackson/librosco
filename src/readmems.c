@@ -21,15 +21,6 @@
 
 static unsigned int o_gpiopin = 0;
 
-/* LED setup */
-void led_setup()
-{
-  wiringPiSetup();
-  pinMode(o_gpiopin, OUTPUT);
-  /* Ensure the LED is off */
-  led(LOW);
-}
-
 /* Update the LED */
 void led(int on)
 {
@@ -47,6 +38,15 @@ void led(int on)
   }
 
   current = on;
+}
+
+/* LED setup */
+void led_setup()
+{
+  wiringPiSetup();
+  pinMode(o_gpiopin, OUTPUT);
+  /* Ensure the LED is off */
+  led(LOW);
 }
 #endif
 
@@ -451,7 +451,7 @@ int main(int argc, char **argv)
   char *config_file;
 
 #if defined(__arm__)
-  setup_led();
+  led_setup();
 #endif
 
   // set up syslog
