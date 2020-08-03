@@ -116,7 +116,7 @@ if (CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "armv6l")
   # Include headers
   message (STATUS, "Adding wiringPi library ${WIRINGPI_INCLUDE_DIRS}, ${WIRINGPI_LIBRARIES}")
   target_link_libraries(${WIRINGPI_LIBRARIES})
-  add_definitions(-L${WIRINGPI_LIBRARIES} -L/usr/local/include -lwiringPi -lpthread)
+  add_definitions(-L${WIRINGPI_LIBRARIES} -L/usr/local/lib -l/usr/local/include -lwiringPi -lpthread)
 endif()
 
 if (MINGW)
