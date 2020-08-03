@@ -17,7 +17,10 @@
 #endif
 
 #if defined(__arm__)
+extern "C"
+{
 #include <wiringPi.h>
+}
 
 static unsigned int o_gpiopin = 0;
 
