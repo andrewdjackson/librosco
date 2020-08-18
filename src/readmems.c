@@ -36,7 +36,7 @@ void led(int on)
   }
   else
   {
-    gpiolWrite(o_gpiopin, 0);
+    gpioWrite(o_gpiopin, 0);
   }
 
   current = on;
