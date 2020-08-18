@@ -109,7 +109,7 @@ set (BINDIR "${CMAKE_BINARY_DIR}/${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
 
 # detect if Raspberry Pi
 if (CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "armv6l")
-  # Link against wiringPi
+  # Link against Pi GPIO libraries
   find_library(PIGPIO_LIBRARIES NAMES pigpio)
   find_path(PIGPIO_INCLUDE_DIRS NAMES pigpio.h)
 
@@ -117,7 +117,6 @@ if (CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "armv6l")
   message (STATUS "Adding Pi GPIO library ${PIGPIO_LIBRARIES}")
   message (STATUS "Pi GPIO include ${PIGPIO_INCLUDE_DIRS}")
 
-  #target_link_libraries(${WIRINGPI_LIBRARIES})
   add_definitions(-L${PIGPIO_LIBRARIES} -L/usr/local/lib -l/usr/local/include -lpigpio -lpthread)
 endif()
 
@@ -141,7 +140,7 @@ if (MINGW)
   )
 
 if (CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "armv6l")
-  target_link_libraries (readmems rosco ${WIRINGPI_LIBRARIES})
+  target_link_libraries (readmems rosco ${PIGPIO_LIBRARIES})
 else()
   target_link_libraries (readmems rosco)
 endif()
@@ -222,7 +221,7 @@ else()
         VERSION   ${LIBROSCO_VERSION}
   )
 
-  target_link_libraries (readmems rosco pthread ${WIRINGPI_LIBRARIES})
+  target_link_libraries (readmems rosco pthread ${PIGPIO_LIBRARIES})
 
   # set the installation destinations for the header files,
   # shared library binaries, and reference utility
