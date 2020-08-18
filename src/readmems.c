@@ -47,7 +47,7 @@ void led(int on)
 void led_setup()
 {
 #if defined(__arm__)
-  if (gpioInitialise() >= 0)
+  if (gpioInitialise() == OK)
   {
     gpioSetMode(o_gpiopin, PI_OUTPUT);
     /* Ensure the LED is off */
@@ -56,7 +56,7 @@ void led_setup()
   }
   else
   {
-    printf("Unable to establish LED connection signalling.\n");
+    printf("Unable to establish LED connection signalling. Have you run with sudo?\n");
   }
 #endif
 }
