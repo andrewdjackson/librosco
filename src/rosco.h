@@ -319,6 +319,7 @@ extern "C"
   void led_setup();
   void led(int on);
   void led_flash(int count, int duration);
+  void led_close();
 
 /* Closing brace for 'extern "C"' */
 #ifdef __cplusplus

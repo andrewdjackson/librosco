@@ -48,11 +48,16 @@ void led_setup()
 {
 #if defined(__arm__)
   if (gpioInitialise() < 0)
-    return -1;
-  gpioSetMode(o_gpiopin, PI_OUTPUT);
-  /* Ensure the LED is off */
-  led(0);
-  printf("LED connection signalling established.\n");
+  {
+    gpioSetMode(o_gpiopin, PI_OUTPUT);
+    /* Ensure the LED is off */
+    led(0);
+    printf("LED connection signalling established.\n");
+  }
+  else
+  {
+    printf("Unable to establish LED connection signalling.\n");
+  }
 #endif
 }
 
@@ -70,6 +75,14 @@ void led_flash(int count, int duration)
     led(0);
     sleep_ms(duration);
   }
+#endif
+}
+
+void led_close()
+{
+#if defined(__arm__)
+  led(0);
+  gpioTerminate();
 #endif
 }
 
@@ -900,7 +913,7 @@ int main(int argc, char **argv)
 
   closelog();
 
-  led(0);
+  led_close();
 
   return success
              ? 0
