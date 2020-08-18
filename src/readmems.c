@@ -47,7 +47,7 @@ void led(int on)
 void led_setup()
 {
 #if defined(__arm__)
-  if (gpioInitialise() < 0)
+  if (gpioInitialise() >= 0)
   {
     gpioSetMode(o_gpiopin, PI_OUTPUT);
     /* Ensure the LED is off */
