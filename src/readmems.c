@@ -20,7 +20,7 @@
 #include <pigpio.h>
 #endif
 
-static unsigned int o_gpiopin = 0;
+static unsigned int o_gpiopin = 17;
 
 /* Update the LED */
 void led(int on)
