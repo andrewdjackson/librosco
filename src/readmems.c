@@ -17,7 +17,7 @@
 #endif
 
 #if defined(__arm__)
-#include <wiringPi.h>
+#include <pigpio.h>
 #endif
 
 static unsigned int o_gpiopin = 0;
@@ -32,11 +32,11 @@ void led(int on)
 
   if (on)
   {
-    digitalWrite(o_gpiopin, HIGH);
+    gpioWrite(o_gpiopin, 1);
   }
   else
   {
-    digitalWrite(o_gpiopin, LOW);
+    gpiolWrite(o_gpiopin, 0);
   }
 
   current = on;
@@ -47,10 +47,11 @@ void led(int on)
 void led_setup()
 {
 #if defined(__arm__)
-  wiringPiSetup();
-  pinMode(o_gpiopin, OUTPUT);
+  if (gpioInitialise() < 0)
+    return -1;
+  gpioSetMode(o_gpiopin, PI_OUTPUT);
   /* Ensure the LED is off */
-  led(LOW);
+  led(0);
   printf("LED connection signalling established.\n");
 #endif
 }
